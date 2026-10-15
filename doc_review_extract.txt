@@ -1,0 +1,138 @@
+0001 [body] DON MARIANO MARCOS MEMORIAL STATE UNIVERSITY
+0002 [body] Mid La Union Campus
+0003 [body] City of San Fernando, La Union, Philippines
+0004 [body] (072) 619 48-17 | www.dmmmsu.edu.ph | cit.mluc@dmmmsu.edu.ph
+0006 [body] COLLEGE OF INFORMATION TECHNOLOGY
+0010 [body] Pormatch
+0011 [body] Startup Project Documentation
+0012 [body] AI Assisted Outfit Planning Website
+0016 [body] Team Error 404
+0017 [body] Benitez, Mariuz
+0018 [body] Chan, Charls Kevin P.
+0019 [body] Rosalejos, Jessa B.
+0020 [body] BS Info Tech 3B
+0028 [body] ITPE 106 – Technopreneurship
+0031 [body] TABLE OF CONTENTS
+0034 [body] Page
+0035 [body] Title Page
+0036 [body] i
+0037 [body] Table of Contents
+0038 [body] ii
+0039 [body] Background of Startup
+0041 [body] Pitch Deck
+0042 [body] Problem Description
+0043 [body] Target Market Segment
+0044 [body] Solution
+0045 [body] Features
+0046 [body] Possible use of Funds
+0048 [body] Business Canvas Model
+0050 [body] Value Proposition Canvas
+0052 [body] Validation Board
+0054 [body] MVP Screenshots
+0056 [body] Appendix
+0057 [body] Interview questionnaires
+0058 [body] Interview documentation
+0064 [body] BACKGROUND OF STARTUP
+0065 [body] Startup Summary
+0066 [body] Pormatch is our AI-assisted outfit planning website designed to help users choose coordinated clothing combinations. It considers the user’s activity, preferred style, size, fit, and color choices when providing recommendations. The platform aims to provide three matching-color recommendations and three complete outfit combinations, giving users a manageable set of options to compare.
+0067 [body] Our MVP shows the main outfit-planning process through the landing page, outfit generator, outfit results, and saved outfits. Users can enter their preferences, review suggested looks, and save their chosen outfits for future use. We also plan to support individual clothing-piece changes and outfit scheduling to make the planning process more flexible.
+0068 [body] Background of the Problem
+0069 [body] Choosing what to wear can take time when a person is unsure which clothing pieces and colors work together. Aside from appearance, users may consider their destination, activity, weather, comfort, and personal style. Having several clothing options does not always make the decision easier because users still need to identify which combinations suit their needs.
+0070 [body] Based on the answers of our three college student respondents, outfit selection is a difficulty they experience at different frequencies. Respondent 1 experiences it almost every day, Respondent 2 almost every time she goes somewhere, and Respondent 3 sometimes. They usually spend around 10 to 20 minutes choosing an outfit, although some occasions take longer. All three have also changed clothing because the colors or pieces did not match.
+0071 [body] Their current approaches include searching for inspiration online, asking friends for suggestions, trying different combinations, and choosing simple or neutral clothing. These methods can help, but users still need to decide whether an outfit suits their own preferences and activities. Through Pormatch, we aim to bring these decisions into one guided process that presents coordinated options and short explanations.
+0072 [body] Purpose and Objectives
+0073 [body] Our goal is to make outfit planning easier and help users feel more confident about their clothing choices. We want to provide useful recommendations while allowing users to make the final decision based on their preferences.
+0074 [body] Specifically, we aim to:
+0075 [body] • Provide three outfit suggestions based on the user’s selected activity and clothing preferences.• Help users coordinate clothing pieces and colors through matching recommendations.• Allow users to compare suggested outfits and choose a suitable combination.• Support individual clothing-piece changes so users can adjust a look before saving it.• Allow users to save preferred outfits and support advance planning through a proposed scheduling feature.• Use likes and dislikes to improve future recommendations.• Gather user feedback to evaluate the usefulness and ease of use of the platform.
+0076 [body] Initial Scope
+0077 [body] Our initial product focuses on outfit recommendations and saved looks using a clothing illustration database. The MVP includes a public landing page, a generator that accepts activity, style, and color preferences, a results page displaying three outfit options, and a saved outfits page.
+0078 [body] Customization, scheduling, and feedback-based improvements remain part of our planned development. Our initial testing will focus on college students because they are the group represented in our interviews. We will also consider weather and comfort when improving the recommendations, since respondents identified these as important factors.
+0093 [body] PITCH DECK
+0094 [body] Problem Description
+0095 [body] Our interviews show that some college students find it difficult to choose outfits that look coordinated and suit their activities. They spend time checking colors, trying clothing combinations, and replacing pieces before leaving. Respondent 2 also described feeling frustrated when an outfit does not look as expected and takes extra time to change.
+0096 [body] Online fashion content and advice from friends provide inspiration, but users still need to apply these ideas to their own preferences. Our project addresses this problem by offering three coordinated outfit options in one place. We aim to make comparison and selection easier, while further testing will determine whether Pormatch actually improves the outfit-planning experience.
+0097 [body] Target Market Segment
+0098 [body] Our initial target market consists of college students who want assistance with everyday outfit choices. This group is our first priority because our three respondents are college students who shared difficulties with outfit selection and color coordination.
+0099 [body] High school students, young adults, professionals, and people preparing for events are also potential users. However, we still need to gather feedback from these groups to understand their specific needs. Fashion and lifestyle businesses may become promotional partners through advertisements or featured promotions, although this opportunity also requires further validation.
+0100 [body] Solution
+0101 [body] Pormatch provides a guided process for choosing coordinated outfits. A user selects an activity or destination, preferred style, and main color. Profile information, such as size and preferred fit, helps personalize the recommendations. The platform then presents three complete outfit options that users can review and compare.
+0102 [body] The results include coordinated clothing pieces, footwear, and accessories, together with matching information and short explanations. Users can save a preferred look and review it later instead of starting the selection process again. We also plan to allow individual-piece changes and scheduling to give users more control over their outfit plans.
+0103 [body] Through this process, we aim to address the uncertainty described by our respondents. Prototype testing will help us determine whether the recommendations are suitable and whether users find the website helpful enough to use again.
+0104 [body] Proposed Core Features
+0105 [body] • Preference SelectionUsers select their activity or destination, preferred style, and main color. Profile details such as size and fit support personalization.
+0106 [body] • AI-Assisted RecommendationsThe platform aims to suggest coordinated outfits based on the user’s selected preferences and provide short explanations of why the combinations work.
+0107 [body] • Color Matching and Three Outfit OptionsUsers receive matching-color recommendations and three complete outfit combinations, allowing them to compare a small set of choices.
+0108 [body] • Outfit Comparison and CustomizationUsers can review suggested looks together. Individual clothing-piece changes are planned to help users adjust unsuitable items.
+0109 [body] • Saved Outfits and Planning CalendarThe MVP includes a saved outfits page for reviewing selected looks. A planning calendar is proposed to help users prepare outfits for future activities.
+0110 [body] • Likes and DislikesA planned feedback feature will allow users to express their preferences and help guide future recommendations.
+0111 [body] • Outfit Sharing and Customer AssistanceThese proposed features will allow users to share selected looks and request help when using the website.
+0113 [body] Pitch Deck Funding and Operations
+0114 [body] Possible use of funds
+0115 [body] The estimated pilot budget is ₱10,000. The proposed allocation covers development, hosting, AI usage, and testing.
+0116 [body] Category
+0117 [body] Purpose
+0118 [body] Estimate
+0119 [body] Website development
+0120 [body] Build preference, recommendation, and saving functions
+0121 [body] ₱3,000
+0122 [body] Hosting and domain
+0123 [body] Deploy the pilot website
+0124 [body] ₱1,500
+0125 [body] Database
+0126 [body] Store accounts, illustrations, and saved outfits
+0127 [body] ₱1,000
+0128 [body] Gemini API usage
+0129 [body] Test AI outfit recommendations
+0130 [body] ₱1,500
+0131 [body] Clothing illustrations
+0132 [body] Prepare and categorize visual assets
+0133 [body] ₱1,000
+0134 [body] Marketing and pilot testing
+0135 [body] Recruit testers and prepare promotion materials
+0136 [body] ₱500
+0137 [body] Maintenance and security
+0138 [body] Fix defects and maintain the pilot
+0139 [body] ₱1,500
+0140 [body] Total
+0142 [body] ₱10,000
+0143 [body] Operations plan
+0144 [body] Our team will create and categorize clothing illustrations, develop the website, test matching rules and AI instructions, and review user feedback. Users will set preferences, request suggestions, customize a look, and save or schedule it. If a recommendation cannot be generated, the website should explain the issue and allow the user to try again.
+0145 [body] Business model and pricing
+0146 [body] Pormatch’s proposed revenue sources are Style Packs at ₱29 per pack, Premium at ₱79 per month, Annual Premium at ₱699 per year, and advertisements or featured promotions at a negotiated rate.
+0147 [body] Information management
+0148 [body] The proposed records include user accounts, preferences, clothing illustrations, saved outfits, schedules, and feedback. Our implementation should limit access to each user’s records and explain how information is used. Payment processing and subscription management will require further implementation planning if paid features are included.
+0155 [body] MODELS
+0156 [body] Business Model Canvas
+0158 [body] Explanation and Discussion
+0159 [body] Our business model shows how Pormatch will provide outfit suggestions and support its operations. Our target users include students, young adults, professionals, and people preparing for events. We plan to reach them through the website, social media, campus promotions, and referrals.
+0160 [body] Our team will develop the platform, prepare clothing illustrations, and test AI recommendations. Planned service providers and promotional partners will support these activities. Proposed revenue comes from style packs, premium subscriptions, and advertisements, while expenses include hosting, database services, AI usage, maintenance, and marketing.
+0164 [body] Value Proposition Canvas
+0166 [body] Value Proposition Customer Profile
+0169 [body] Explanation and Discussion
+0170 [body] Our Value Proposition Canvas connects our users’ needs with the features and benefits we aim to provide through Pormatch. Our target users want coordinated outfits that suit their activities and personal style. Based on the three respondents’ answers, their difficulties include deciding what to wear, matching clothing pieces and colors, and spending extra time changing outfits. They currently look for online inspiration, ask friends for advice, or try different combinations until they find a suitable look.
+0171 [body] To address these difficulties, Pormatch provides three outfit recommendations based on the user’s activity, style, color, and profile preferences. Our MVP displays these options together so users can compare them, and the Saved Outfits page allows them to review selected looks later. We also propose customization and planning features to give users more control over their choices. Through these features, we aim to make outfit decisions easier and help users feel more confident.
+0172 [body] The respondents also mentioned weather and comfort, so we need to consider these when improving our recommendations. Although their answers support the outfit-selection problem, they do not yet confirm that Pormatch saves time or improves confidence. We will use prototype testing and user feedback to check whether our features deliver these benefits.
+0191 [body] Validation Board
+0193 [body] Explanation and Discussion
+0194 [body] Our validation board shows how we checked the outfit-planning problem and how we plan to test Pormatch. We gathered answers from three college students, labeled Respondents 1, 2, and 3. All three experience difficulty choosing outfits and have changed clothing because the colors or pieces did not match. Respondent 1 usually spends 10 to 15 minutes choosing an outfit, Respondent 2 spends 15 to 20 minutes, and Respondent 3 spends around 10 minutes. Sometimes, they take longer. Their answers helped us identify color coordination, weather, comfort, activity, and personal style as important considerations.
+0195 [body] Based on these findings, we will continue testing whether Pormatch can help students choose suitable outfits. Our riskiest assumption is that users will find our recommendations useful enough to choose a look and return to the website. We plan to test the prototype with 10 students, with a target of at least 8 choosing or customizing a suitable outfit without help. We also plan to check whether at least 6 of 10 students save an outfit and return to use it within one week. These tests are still pending. The interviews support the problem, while the next tests will help us evaluate our solution.
+0196 [body] MINIMUM VIABLE PRODUCT
+0197 [body] Public Landing Page
+0198 [body] The landing page introduces Pormatch and explains its purpose: helping users find coordinated outfits based on their destination, preferred style, and main color. It also provides access to the outfit generator, dashboard, and pricing information.
+0200 [body] Generated Outfit Page
+0201 [body] Allows users to enter their preferences, including activity or destination, preferred style, and main color. The user’s gender, size, and preferred fit are taken from their profile to personalize the recommendations.
+0203 [body] Outfit Result Page
+0204 [body] The results page displays three complete outfit recommendations ranked according to the user’s selected preferences. Each recommendation contains coordinated clothing, footwear, and accessories, along with a match score and a short explanation of why the outfit was selected.
+0206 [body] Saved Outfit Page
+0207 [body] Allows users to examine selected recommendations side by side before choosing a preferred look. The Saved Outfits page keeps the user’s chosen recommendations so they can review and reuse them later.
+0211 [body] APPENDIX
+0213 [body] Interview Questionnaires
+0215 [body] PORMATCH QUESTIONNAIRE
+0217 [body] We are students developing Pormatch, an AI-assisted outfit planning website that helps users choose coordinated outfits based on their activity, personal style, and clothing preferences. This questionnaire aims to understand your experiences and difficulties when choosing what to wear. Your answers will be used for our class project and kept confidential. Participation is voluntary, and you may skip any question. Please answer the following five open-ended questions based on your own experiences. There are no right or wrong answers.
+0219 [body] Questions:
+0221 [body] 1. How often do you experience difficulty deciding what to wear?
+0222 [body] 2. What factors do you consider when choosing an outfit, such as the weather, activity, style, or color?
+0223 [body] 3. How much time do you usually spend choosing an outfit before going out?
+0224 [body] 4. What do you usually do when you are unsure which clothes match?
+0225 [body] 5. Have you ever changed your outfit because you felt that the colors or clothing pieces did not match? Please explain.
+0228 [body] Interview Documentation
