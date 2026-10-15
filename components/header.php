@@ -13,14 +13,11 @@
     </div>
 
     <div class="header-actions flex items-center space-x-3">
-        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+        <button type="button" id="add-ingredient" class="ingredient-primary-button hidden"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add ingredient</button>
+        <button type="button" id="add-supplier" class="supplier-primary-button hidden"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add supplier</button>
+        <span id="header-status" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
             All recorded entries
         </span>
-        <!-- Post Entry Trigger Modal Button -->
-        <button id="new-entry-button" aria-label="Post a new journal entry" class="inline-flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg text-sm shadow-md shadow-emerald-600/20 transition-all hover:shadow-lg">
-            <i class="fa-solid fa-plus text-xs"></i>
-            <span>Post Entry</span>
-        </button>
     </div>
 </header>

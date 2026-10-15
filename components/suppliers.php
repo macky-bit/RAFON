@@ -1,10 +1,5 @@
 <?php declare(strict_types=1); ?>
 <section id="suppliers-view" class="hidden supplier-shell">
-    <div class="section-intro supplier-intro">
-        <div><span class="eyebrow">Procurement network</span><h2>Supplier directory</h2><p>Maintain the contacts and delivery details that keep catering operations moving.</p></div>
-        <button type="button" id="add-supplier" class="supplier-primary-button"><i class="fa-solid fa-plus"></i> Add supplier</button>
-    </div>
-
     <div class="supplier-stats" aria-label="Supplier summary">
         <div><span>Active suppliers</span><strong id="supplier-active-count">0</strong></div>
         <div><span>Preferred suppliers</span><strong id="supplier-preferred-count">0</strong></div>

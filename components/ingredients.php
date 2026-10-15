@@ -7,15 +7,6 @@ startAppSession();
 requireAuthenticatedUser();
 ?>
 <section id="ingredients-view" class="hidden ingredients-shell">
-    <header class="ingredients-intro">
-        <div>
-            <span class="eyebrow">Kitchen inventory</span>
-            <h2>Ingredients</h2>
-            <p>Manage ingredient stock, supplier details, and reorder settings.</p>
-        </div>
-        <button type="button" id="add-ingredient" class="ingredient-primary-button"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add ingredient</button>
-    </header>
-
     <div class="ingredients-card">
         <div class="ingredients-toolbar" aria-label="Ingredient filters">
             <label class="ingredient-search" for="ingredient-search"><span class="sr-only">Search ingredients</span><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i><input type="search" id="ingredient-search" placeholder="Search ingredients or suppliers"></label>
@@ -34,10 +25,10 @@ requireAuthenticatedUser();
 
     <dialog id="ingredient-settings" aria-labelledby="ingredient-settings-title">
         <form id="ingredient-form" class="ingredient-settings-card">
-            <header class="ingredient-settings-header">
-                <div><span class="eyebrow">Inventory record</span><h2 id="ingredient-settings-title">Ingredient settings</h2><p>Add or update an ingredient.</p></div>
-                <button type="button" class="js-close-ingredient" aria-label="Close ingredient settings"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
-            </header>
+            <div class="supplier-modal-header ingredient-settings-header">
+                <div><span class="eyebrow">Inventory record</span><h2 id="ingredient-settings-title">Add ingredient</h2></div>
+                <button type="button" class="js-close-ingredient" aria-label="Close ingredient form"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
             <input type="hidden" id="ingredient-id">
             <input type="hidden" id="ingredient-current-image">
             <p id="ingredient-form-error" class="form-error hidden" role="alert"></p>
@@ -52,7 +43,6 @@ requireAuthenticatedUser();
                 <label class="ingredient-field"><span>Current stock</span><input type="number" id="ingredient-stock" min="0" step="0.01" required></label>
                 <label class="ingredient-field"><span>Unit</span><select id="ingredient-unit"><option>kg</option><option>g</option><option>L</option><option>mL</option><option>pc</option><option>pack</option></select></label>
                 <label class="ingredient-field"><span>Unit cost</span><span class="ingredient-money-input"><b>₱</b><input type="number" id="ingredient-cost" min="0" step="0.01" required></span></label>
-                <label class="ingredient-field"><span>Reorder level</span><input type="number" id="ingredient-reorder" min="0" step="0.01" required></label>
             </div>
             <div class="ingredient-settings-actions"><button type="button" class="ingredient-secondary-button js-close-ingredient">Cancel</button><button type="submit" class="ingredient-primary-button">Save changes</button></div>
         </form>

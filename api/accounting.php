@@ -32,6 +32,62 @@ function validDate(string $date): bool
     return $parsed !== false && $parsed->format('Y-m-d') === $date;
 }
 
+function validatedTransaction(array $payload, PDO $pdo): array
+{
+    $date = trim((string) ($payload['date'] ?? ''));
+    $reference = trim((string) ($payload['ref'] ?? ''));
+    $debitCode = trim((string) ($payload['debitCode'] ?? ''));
+    $creditCode = trim((string) ($payload['creditCode'] ?? ''));
+    $explanation = trim((string) ($payload['explanation'] ?? ''));
+    $debitAmount = round((float) ($payload['debitAmount'] ?? 0), 2);
+    $creditAmount = round((float) ($payload['creditAmount'] ?? 0), 2);
+
+    if (!validDate($date)) respond(['error' => 'A valid transaction date is required.'], 422);
+    if ($reference === '' || strlen($reference) > 50) respond(['error' => 'The reference is required and must not exceed 50 characters.'], 422);
+    if ($explanation === '' || strlen($explanation) > 500) respond(['error' => 'The explanation is required and must not exceed 500 characters.'], 422);
+    if ($debitCode === '' || $creditCode === '' || $debitCode === $creditCode) respond(['error' => 'Choose two different debit and credit accounts.'], 422);
+    if ($debitAmount <= 0 || $creditAmount <= 0 || (int) round($debitAmount * 100) !== (int) round($creditAmount * 100)) {
+        respond(['error' => 'Debit and credit amounts must be positive and equal.'], 422);
+    }
+
+    $statement = $pdo->prepare('SELECT id, code, title FROM accounts WHERE code IN (?, ?) AND is_active = TRUE');
+    $statement->execute([$debitCode, $creditCode]);
+    $accounts = [];
+    foreach ($statement->fetchAll() as $account) $accounts[$account['code']] = $account;
+    if (!isset($accounts[$debitCode], $accounts[$creditCode])) {
+        respond(['error' => 'One or both selected accounts do not exist or are inactive.'], 422);
+    }
+
+    return compact('date', 'reference', 'debitCode', 'creditCode', 'explanation', 'debitAmount', 'creditAmount', 'accounts');
+}
+
+function transactionRecord(int $id, array $data): array
+{
+    $debit = $data['accounts'][$data['debitCode']];
+    $credit = $data['accounts'][$data['creditCode']];
+    return [
+        'id' => $id, 'date' => $data['date'], 'ref' => $data['reference'],
+        'debitAcc' => $debit['title'], 'debitCode' => $data['debitCode'],
+        'debitAmount' => $data['debitAmount'], 'creditAcc' => $credit['title'],
+        'creditCode' => $data['creditCode'], 'creditAmount' => $data['creditAmount'],
+        'explanation' => $data['explanation'],
+    ];
+}
+
+function journalAudit(PDO $pdo, string $action, string $reference, string $detail): array
+{
+    $user = currentUser()['fullName'] ?? 'System User';
+    $statement = $pdo->prepare(
+        'INSERT INTO audit_logs (user_name, action, reference_number, details, status) VALUES (?, ?, ?, ?, ?)'
+    );
+    $statement->execute([$user, $action, $reference, $detail, 'VERIFIED']);
+    return [
+        'timestamp' => (new DateTimeImmutable())->format('Y-m-d H:i:s'),
+        'user' => $user, 'action' => $action,
+        'ref' => $reference, 'detail' => $detail, 'status' => 'VERIFIED',
+    ];
+}
+
 function loadAccountingData(PDO $pdo): array
 {
     $accounts = $pdo->query(
@@ -80,70 +136,68 @@ try {
     if ($method === 'GET') {
         respond(loadAccountingData($pdo));
     }
-    if ($method !== 'POST') {
-        header('Allow: GET, POST');
+    if (!in_array($method, ['POST', 'PUT', 'DELETE'], true)) {
+        header('Allow: GET, POST, PUT, DELETE');
         respond(['error' => 'Method not allowed.'], 405);
     }
 
     $payload = requestPayload();
-    $date = trim((string) ($payload['date'] ?? ''));
-    $reference = trim((string) ($payload['ref'] ?? ''));
-    $debitCode = trim((string) ($payload['debitCode'] ?? ''));
-    $creditCode = trim((string) ($payload['creditCode'] ?? ''));
-    $explanation = trim((string) ($payload['explanation'] ?? ''));
-    $debitAmount = round((float) ($payload['debitAmount'] ?? 0), 2);
-    $creditAmount = round((float) ($payload['creditAmount'] ?? 0), 2);
+    $id = (int) ($payload['id'] ?? 0);
+    if ($method !== 'POST' && $id <= 0) respond(['error' => 'A valid journal entry ID is required.'], 422);
 
-    if (!validDate($date)) respond(['error' => 'A valid transaction date is required.'], 422);
-    if ($reference === '' || strlen($reference) > 50) respond(['error' => 'The reference is required and must not exceed 50 characters.'], 422);
-    if ($explanation === '' || strlen($explanation) > 500) respond(['error' => 'The explanation is required and must not exceed 500 characters.'], 422);
-    if ($debitCode === '' || $creditCode === '' || $debitCode === $creditCode) respond(['error' => 'Choose two different debit and credit accounts.'], 422);
-    if ($debitAmount <= 0 || $creditAmount <= 0 || (int) round($debitAmount * 100) !== (int) round($creditAmount * 100)) {
-        respond(['error' => 'Debit and credit amounts must be positive and equal.'], 422);
+    if ($method === 'DELETE') {
+        $pdo->beginTransaction();
+        $statement = $pdo->prepare('SELECT reference_number, status FROM journal_entries WHERE id = ? FOR UPDATE');
+        $statement->execute([$id]);
+        $existing = $statement->fetch();
+        if (!$existing || $existing['status'] !== 'POSTED') {
+            $pdo->rollBack();
+            respond(['error' => 'This journal entry is no longer available.'], 404);
+        }
+        $pdo->prepare("UPDATE journal_entries SET status = 'VOID' WHERE id = ?")->execute([$id]);
+        $auditLog = journalAudit($pdo, 'Deleted Transaction', $existing['reference_number'], 'Journal entry voided');
+        $pdo->commit();
+        respond(['id' => $id, 'auditLog' => $auditLog]);
     }
 
-    $accountStatement = $pdo->prepare('SELECT id, code, title FROM accounts WHERE code IN (?, ?) AND is_active = TRUE');
-    $accountStatement->execute([$debitCode, $creditCode]);
-    $accountsByCode = [];
-    foreach ($accountStatement->fetchAll() as $account) $accountsByCode[$account['code']] = $account;
-    if (!isset($accountsByCode[$debitCode], $accountsByCode[$creditCode])) {
-        respond(['error' => 'One or both selected accounts do not exist or are inactive.'], 422);
-    }
+    $data = validatedTransaction($payload, $pdo);
+    $debitAccount = $data['accounts'][$data['debitCode']];
+    $creditAccount = $data['accounts'][$data['creditCode']];
+    $detail = $debitAccount['title'] . ' / ' . $creditAccount['title'];
 
     $pdo->beginTransaction();
-    $entryStatement = $pdo->prepare(
-        'INSERT INTO journal_entries (entry_date, reference_number, explanation, created_by) VALUES (?, ?, ?, ?)'
-    );
-    $entryStatement->execute([$date, $reference, $explanation, 'Senior Accountant']);
-    $entryId = (int) $pdo->lastInsertId();
+    if ($method === 'POST') {
+        $statement = $pdo->prepare(
+            'INSERT INTO journal_entries (entry_date, reference_number, explanation, created_by) VALUES (?, ?, ?, ?)'
+        );
+        $statement->execute([$data['date'], $data['reference'], $data['explanation'], currentUser()['fullName'] ?? 'System User']);
+        $id = (int) $pdo->lastInsertId();
+    } else {
+        $statement = $pdo->prepare('SELECT status FROM journal_entries WHERE id = ? FOR UPDATE');
+        $statement->execute([$id]);
+        $existing = $statement->fetch();
+        if (!$existing || $existing['status'] !== 'POSTED') {
+            $pdo->rollBack();
+            respond(['error' => 'This journal entry is no longer available.'], 404);
+        }
+        $pdo->prepare('UPDATE journal_entries SET entry_date = ?, reference_number = ?, explanation = ? WHERE id = ?')
+            ->execute([$data['date'], $data['reference'], $data['explanation'], $id]);
+    }
 
     $lineStatement = $pdo->prepare(
         'INSERT INTO journal_lines (journal_entry_id, account_id, line_type, amount) VALUES (?, ?, ?, ?)'
     );
-    $lineStatement->execute([$entryId, $accountsByCode[$debitCode]['id'], 'Debit', $debitAmount]);
-    $lineStatement->execute([$entryId, $accountsByCode[$creditCode]['id'], 'Credit', $creditAmount]);
+    if ($method === 'PUT') $pdo->prepare('DELETE FROM journal_lines WHERE journal_entry_id = ?')->execute([$id]);
+    $lineStatement->execute([$id, $debitAccount['id'], 'Debit', $data['debitAmount']]);
+    $lineStatement->execute([$id, $creditAccount['id'], 'Credit', $data['creditAmount']]);
 
-    $detail = $accountsByCode[$debitCode]['title'] . ' / ' . $accountsByCode[$creditCode]['title'];
-    $logStatement = $pdo->prepare(
-        'INSERT INTO audit_logs (user_name, action, reference_number, details, status) VALUES (?, ?, ?, ?, ?)'
-    );
-    $logStatement->execute(['Senior Accountant', 'Posted Transaction', $reference, $detail, 'VERIFIED']);
+    $auditLog = journalAudit($pdo, $method === 'POST' ? 'Posted Transaction' : 'Edited Transaction', $data['reference'], $detail);
     $pdo->commit();
 
     respond([
-        'entry' => [
-            'id' => $entryId, 'date' => $date, 'ref' => $reference,
-            'debitAcc' => $accountsByCode[$debitCode]['title'], 'debitCode' => $debitCode,
-            'debitAmount' => $debitAmount, 'creditAcc' => $accountsByCode[$creditCode]['title'],
-            'creditCode' => $creditCode, 'creditAmount' => $creditAmount,
-            'explanation' => $explanation,
-        ],
-        'auditLog' => [
-            'timestamp' => (new DateTimeImmutable())->format('Y-m-d H:i:s'),
-            'user' => 'Senior Accountant', 'action' => 'Posted Transaction',
-            'ref' => $reference, 'detail' => $detail, 'status' => 'VERIFIED',
-        ],
-    ], 201);
+        'entry' => transactionRecord($id, $data),
+        'auditLog' => $auditLog,
+    ], $method === 'POST' ? 201 : 200);
 } catch (PDOException $exception) {
     if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
     if ((string) $exception->getCode() === '23000') respond(['error' => 'That reference code already exists. Use a unique reference.'], 409);

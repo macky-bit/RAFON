@@ -2,8 +2,8 @@
 <section id="balance-sheet-view" class="hidden report-view">
     <div class="report-card">
         <header class="report-heading">
-            <h2>Compañero Rafon Resto Grill &amp; Seafoods</h2>
-            <h3>Balance Sheet</h3>
+            <span class="report-eyebrow">Compañero Rafon Resto Grill &amp; Seafoods</span>
+            <h2>Balance Sheet</h2>
             <p>Based on all recorded journal entries</p>
         </header>
 

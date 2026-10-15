@@ -160,7 +160,7 @@ function renderRecentEntries() {
     if (!table) return;
     const entries = [...journalEntries].reverse().slice(0, 5);
     if (!entries.length) {
-        table.innerHTML = '<tr><td colspan="5" class="dashboard-empty-state">No entries yet. Use Post Entry to record your first transaction.</td></tr>';
+        table.innerHTML = '<tr><td colspan="5" class="dashboard-empty-state">No entries yet. Open General Journal to record your first transaction.</td></tr>';
         return;
     }
     table.innerHTML = entries.map(entry => `<tr>

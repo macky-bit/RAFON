@@ -1,5 +1,7 @@
 /* Audit Trail */
-import { loadTemplate } from '../loader.js';import { auditLogs } from '../state.js';
+import { loadTemplate } from '../loader.js';
+import { auditLogs } from '../state.js';
+import { escapeHTML } from '../utils.js';
 
 export async function mount(parent) {
     parent.insertAdjacentHTML('beforeend', await loadTemplate('auditTrail'));
@@ -9,20 +11,21 @@ export async function mount(parent) {
 export function render() {
     const tbody = document.getElementById('audit-trail-body');
     tbody.innerHTML = '';
+    document.getElementById('audit-record-count').textContent = `${auditLogs.length} record${auditLogs.length === 1 ? '' : 's'}`;
 
     [...auditLogs].reverse().forEach(log => {
         tbody.innerHTML += `
-            <tr class="hover:bg-slate-50 text-xs">
-                <td class="py-3 px-4 font-mono text-slate-500">${log.timestamp}</td>
-                <td class="py-3 px-4 font-semibold text-slate-800">${log.user}</td>
-                <td class="py-3 px-4 font-mono text-emerald-600">${log.ref}</td>
-                <td class="py-3 px-4 text-slate-600">${log.action}: ${log.detail}</td>
+            <tr>
+                <td class="py-3 px-4 font-mono text-slate-500">${escapeHTML(log.timestamp)}</td>
+                <td class="py-3 px-4 font-semibold text-slate-800">${escapeHTML(log.user)}</td>
+                <td class="py-3 px-4 font-mono text-emerald-600">${escapeHTML(log.ref)}</td>
+                <td class="py-3 px-4 text-slate-600">${escapeHTML(log.action)}: ${escapeHTML(log.detail)}</td>
                 <td class="py-3 px-4">
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">${log.status}</span>
+                    <span class="audit-status">${escapeHTML(log.status)}</span>
                 </td>
             </tr>
         `;
     });
-    if (!tbody.children.length) tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No accounting activity has been recorded yet.</td></tr>';
+    if (!tbody.children.length) tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No activity has been recorded yet.</td></tr>';
 
 }

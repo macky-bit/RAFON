@@ -2,8 +2,8 @@
 <section id="income-statement-view" class="hidden report-view">
     <div class="report-card">
         <header class="report-heading">
-            <h2>Compañero Rafon Resto Grill &amp; Seafoods</h2>
-            <h3>Income Statement</h3>
+            <span class="report-eyebrow">Compañero Rafon Resto Grill &amp; Seafoods</span>
+            <h2>Income Statement</h2>
             <p>All recorded journal entries</p>
         </header>
 

@@ -1,5 +1,6 @@
 /* Entry point: mounts every component, wires events, first render */
 import { loadState, onChange } from './state.js';
+import { loadTemplate } from './loader.js';
 import { initNavigation } from './router.js';
 
 import * as sidebar from './components/sidebar.js';
@@ -42,17 +43,17 @@ async function init() {
     for (const view of [dashboard, suppliers, ingredients, journal, ledger, trialBalance, incomeStatement, balanceSheet, auditTrail]) {
         await view.mount(content);
     }
+    content.insertAdjacentHTML('beforeend', await loadTemplate('account'));
     await postModal.mount(document.getElementById('modal-root'));
 
     // 2) Wire events before database loading so navigation stays usable
     // even when the local database is offline or slow.
     initNavigation();
     sidebar.bindEvents();
-    header.bindEvents({ onNewEntry: postModal.openModal });
     dashboard.bindEvents();
     suppliers.bindEvents();
     ingredients.bindEvents();
-    journal.bindEvents();
+    journal.bindEvents({ onNewEntry: postModal.openModal, onEditEntry: postModal.openModal });
     ledger.bindEvents();
     postModal.bindEvents();
 

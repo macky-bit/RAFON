@@ -110,6 +110,6 @@ export function render() {
         `;
         container.appendChild(accountBox);
     });
-    if (!container.children.length) container.innerHTML = '<p class="empty-state">No postings for these accounts yet. Use Post Entry to get started.</p>';
+    if (!container.children.length) container.innerHTML = '<p class="empty-state">No postings for these accounts yet. Open General Journal to get started.</p>';
 
 }

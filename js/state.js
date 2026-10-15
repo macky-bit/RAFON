@@ -69,9 +69,34 @@ export async function postEntry(entry) {
     });
 
     journalEntries.push(result.entry);
+    journalEntries.sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id);
     auditLogs.push(result.auditLog);
     emitChange();
     return result.entry;
+}
+
+export async function updateEntry(id, entry) {
+    const result = await apiRequest('api/accounting.php', {
+        method: 'PUT',
+        body: JSON.stringify({ ...entry, id })
+    });
+    const index = journalEntries.findIndex(item => item.id === id);
+    if (index >= 0) journalEntries.splice(index, 1, result.entry);
+    journalEntries.sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id);
+    auditLogs.push(result.auditLog);
+    emitChange();
+    return result.entry;
+}
+
+export async function deleteEntry(id) {
+    const result = await apiRequest('api/accounting.php', {
+        method: 'DELETE',
+        body: JSON.stringify({ id })
+    });
+    const index = journalEntries.findIndex(item => item.id === id);
+    if (index >= 0) journalEntries.splice(index, 1);
+    auditLogs.push(result.auditLog);
+    emitChange();
 }
 
 export async function saveCateringEvent(event, id = null) {

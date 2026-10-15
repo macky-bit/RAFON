@@ -99,7 +99,6 @@ function openSettings(item = null, trigger = null) {
     document.getElementById('ingredient-stock').value = item?.stock ?? 0;
     document.getElementById('ingredient-unit').value = item?.unit || 'kg';
     document.getElementById('ingredient-cost').value = item?.cost ?? 0;
-    document.getElementById('ingredient-reorder').value = item?.reorderLevel ?? 0;
     document.getElementById('ingredient-settings-title').textContent = item ? 'Ingredient settings' : 'Add ingredient';
     document.getElementById('ingredient-settings').showModal();
     document.getElementById('ingredient-name').focus();
@@ -122,7 +121,7 @@ async function handleSubmit(event) {
         stock: Number(document.getElementById('ingredient-stock').value),
         unit: document.getElementById('ingredient-unit').value,
         cost: Number(document.getElementById('ingredient-cost').value),
-        reorderLevel: Number(document.getElementById('ingredient-reorder').value)
+        reorderLevel: Number(ingredients.find(ingredient => ingredient.id === id)?.reorderLevel ?? 0)
     };
     error.classList.add('hidden');
     if (button) button.disabled = true;
