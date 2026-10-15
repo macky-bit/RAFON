@@ -1,0 +1,268 @@
+/* Executive Dashboard: metric cards + recent activity */
+import { loadTemplate } from '../loader.js';
+import {
+    cateringEvents,
+    chartOfAccounts,
+    deleteCateringEvent,
+    journalEntries,
+    saveCateringEvent
+} from '../state.js';
+import { escapeHTML, formatPHP } from '../utils.js';
+
+export async function mount(parent) {
+    parent.insertAdjacentHTML('beforeend', await loadTemplate('overview'));
+}
+
+function accountTotals() {
+    return chartOfAccounts.map(account => {
+        let debit = 0;
+        let credit = 0;
+        journalEntries.forEach(entry => {
+            if (entry.debitAcc === account.title) debit += Number(entry.debitAmount) || 0;
+            if (entry.creditAcc === account.title) credit += Number(entry.creditAmount) || 0;
+        });
+        const balance = ['Asset', 'Expense'].includes(account.category) ? debit - credit : credit - debit;
+        return { ...account, debit, credit, balance };
+    });
+}
+
+function setMoney(id, amount, trackNegative = false) {
+    const element = document.getElementById(id);
+    if (!element) return;
+    element.textContent = formatPHP(amount);
+    element.classList.toggle('negative-value', trackNegative && amount < 0);
+}
+
+function renderFinancialSummary(totals) {
+    const sumCategory = category => totals
+        .filter(item => item.category === category)
+        .reduce((sum, item) => sum + item.balance, 0);
+    const revenue = sumCategory('Revenue');
+    const expenses = sumCategory('Expense');
+    const receivables = totals.find(item => item.title === 'Accounts Receivable')
+        || totals.find(item => ['102', '120'].includes(String(item.code)));
+    const cash = totals.find(item => item.title === 'Cash on Hand & Bank')
+        || totals.find(item => ['101', '110'].includes(String(item.code)));
+
+    setMoney('dash-revenue', revenue);
+    setMoney('dash-expenses', expenses);
+    setMoney('dash-net-income', revenue - expenses, true);
+    setMoney('dash-receivables', receivables?.balance || 0);
+    setMoney('dash-cash-balance', cash?.balance || 0);
+    setMoney('dash-cash-received', cash?.debit || 0);
+    setMoney('dash-cash-paid', cash?.credit || 0);
+    setMoney('dash-net-cash', (cash?.debit || 0) - (cash?.credit || 0), true);
+}
+
+function renderPerformanceChart() {
+    const container = document.getElementById('performance-chart');
+    if (!container) return;
+    const accountCategory = new Map(chartOfAccounts.map(account => [account.title, account.category]));
+    const now = new Date();
+    const months = Array.from({ length: 6 }, (_, offset) => {
+        const date = new Date(now.getFullYear(), now.getMonth() - (5 - offset), 1);
+        return {
+            key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`,
+            label: date.toLocaleDateString('en-US', { month: 'short' }),
+            revenue: 0,
+            expenses: 0
+        };
+    });
+    const byMonth = new Map(months.map(month => [month.key, month]));
+    journalEntries.forEach(entry => {
+        const month = byMonth.get(String(entry.date || '').slice(0, 7));
+        if (!month) return;
+        if (accountCategory.get(entry.creditAcc) === 'Revenue') month.revenue += Number(entry.creditAmount) || 0;
+        if (accountCategory.get(entry.debitAcc) === 'Expense') month.expenses += Number(entry.debitAmount) || 0;
+    });
+    const maximum = Math.max(...months.flatMap(month => [month.revenue, month.expenses]), 1);
+    container.innerHTML = months.map(month => `
+        <div class="chart-month">
+            <div class="bar-pair">
+                <i class="chart-bar revenue-bar" style="height:${Math.max((month.revenue / maximum) * 100, month.revenue ? 4 : 1)}%" title="${month.label} revenue: ${formatPHP(month.revenue)}"></i>
+                <i class="chart-bar expense-bar" style="height:${Math.max((month.expenses / maximum) * 100, month.expenses ? 4 : 1)}%" title="${month.label} expenses: ${formatPHP(month.expenses)}"></i>
+            </div>
+            <span>${month.label}</span>
+        </div>
+    `).join('');
+}
+
+function renderExpenseBreakdown(totals) {
+    const container = document.getElementById('expense-breakdown');
+    if (!container) return;
+    const expenses = totals
+        .filter(item => item.category === 'Expense' && item.balance > 0)
+        .sort((a, b) => b.balance - a.balance);
+    const maximum = Math.max(...expenses.map(item => item.balance), 0);
+
+    if (!expenses.length) {
+        container.innerHTML = '<p class="dashboard-empty-state">No posted expense entries yet.</p>';
+        return;
+    }
+
+    container.innerHTML = expenses.map((item, index) => `
+        <div class="expense-row" role="listitem">
+            <span class="expense-rank">${String(index + 1).padStart(2, '0')}</span>
+            <div class="expense-detail">
+                <div><strong>${escapeHTML(item.title)}</strong><span>${formatPHP(item.balance)}</span></div>
+                <div class="expense-track" aria-hidden="true"><i style="width:${(item.balance / maximum) * 100}%"></i></div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function eventStatusClass(status) {
+    return `event-status event-status-${String(status).toLowerCase()}`;
+}
+
+function renderCateringEvents() {
+    const activeEvents = cateringEvents.filter(event => event.status !== 'Cancelled');
+    const now = new Date();
+    const thisMonth = activeEvents.filter(event => {
+        const date = new Date(`${event.eventDate}T00:00:00`);
+        return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+    });
+    const revenue = activeEvents.reduce((sum, event) => sum + Number(event.totalRevenue || 0), 0);
+    const unpaid = activeEvents
+        .filter(event => event.status === 'Upcoming')
+        .reduce((sum, event) => sum + Math.max(Number(event.totalRevenue || 0) - Number(event.amountPaid || 0), 0), 0);
+    const packages = new Map();
+    activeEvents.forEach(event => {
+        const profit = Number(event.totalRevenue || 0) - Number(event.estimatedCost || 0);
+        packages.set(event.packageName, (packages.get(event.packageName) || 0) + profit);
+    });
+    const topPackage = [...packages.entries()].sort((a, b) => b[1] - a[1])[0];
+
+    document.getElementById('event-month-count').textContent = String(thisMonth.length);
+    setMoney('event-total-revenue', revenue);
+    setMoney('event-unpaid-balance', unpaid);
+    document.getElementById('event-top-package').textContent = topPackage ? topPackage[0] : 'No data yet';
+
+    const table = document.getElementById('catering-events-table');
+    if (!cateringEvents.length) {
+        table.innerHTML = '<tr><td colspan="5" class="dashboard-empty-state">No events yet. Add your first catering booking.</td></tr>';
+        return;
+    }
+
+    table.innerHTML = cateringEvents.map(event => {
+        return `<tr>
+            <td><strong>${escapeHTML(event.eventName)}</strong><small>${escapeHTML(event.clientName)} · ${escapeHTML(event.packageName)}</small></td>
+            <td>${escapeHTML(event.eventDate)}</td>
+            <td><span class="${eventStatusClass(event.status)}">${escapeHTML(event.status)}</span></td>
+            <td class="amount-column mono">${formatPHP(event.totalRevenue)}</td>
+            <td><div class="event-row-actions"><button type="button" data-action="edit-event" data-id="${event.id}" aria-label="Edit ${escapeHTML(event.eventName)}"><i class="fa-solid fa-pen"></i></button><button type="button" data-action="delete-event" data-id="${event.id}" aria-label="Delete ${escapeHTML(event.eventName)}"><i class="fa-solid fa-trash"></i></button></div></td>
+        </tr>`;
+    }).join('');
+}
+
+function renderRecentEntries() {
+    const table = document.getElementById('dash-recent-table');
+    if (!table) return;
+    const entries = [...journalEntries].reverse().slice(0, 5);
+    if (!entries.length) {
+        table.innerHTML = '<tr><td colspan="5" class="dashboard-empty-state">No entries yet. Use Post Entry to record your first transaction.</td></tr>';
+        return;
+    }
+    table.innerHTML = entries.map(entry => `<tr>
+        <td class="py-3 px-4">${escapeHTML(entry.date)}</td>
+        <td class="py-3 px-4"><strong>${escapeHTML(entry.debitAcc)} / ${escapeHTML(entry.creditAcc)}</strong><small class="dashboard-table-note">${escapeHTML(entry.explanation)}</small></td>
+        <td class="py-3 px-4 mono">${escapeHTML(entry.ref)}</td>
+        <td class="py-3 px-4 amount-column mono">${formatPHP(entry.debitAmount)}</td>
+        <td class="py-3 px-4 amount-column mono">${formatPHP(entry.creditAmount)}</td>
+    </tr>`).join('');
+}
+
+export function render() {
+    const totals = accountTotals();
+    renderFinancialSummary(totals);
+    renderPerformanceChart();
+    renderExpenseBreakdown(totals);
+    renderCateringEvents();
+    renderRecentEntries();
+}
+
+function todayValue() {
+    const date = new Date();
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function openEventModal(event = null) {
+    document.getElementById('catering-event-form').reset();
+    document.getElementById('catering-event-error').classList.add('hidden');
+    document.getElementById('event-id').value = event?.id || '';
+    document.getElementById('event-name').value = event?.eventName || '';
+    document.getElementById('event-client').value = event?.clientName || '';
+    document.getElementById('event-package').value = event?.packageName || '';
+    document.getElementById('event-date').value = event?.eventDate || todayValue();
+    document.getElementById('event-status').value = event?.status || 'Upcoming';
+    document.getElementById('event-revenue').value = event?.totalRevenue ?? 0;
+    document.getElementById('event-cost').value = event?.estimatedCost ?? 0;
+    document.getElementById('event-paid').value = event?.amountPaid ?? 0;
+    document.getElementById('event-notes').value = event?.notes || '';
+    document.getElementById('catering-event-modal-title').textContent = event ? 'Edit catering event' : 'Add catering event';
+    document.getElementById('catering-event-modal').showModal();
+    document.getElementById('event-name').focus();
+}
+
+function closeEventModal() {
+    document.getElementById('catering-event-modal').close();
+}
+
+async function handleEventSubmit(submitEvent) {
+    submitEvent.preventDefault();
+    const error = document.getElementById('catering-event-error');
+    error.classList.add('hidden');
+    const id = Number(document.getElementById('event-id').value) || null;
+    const event = {
+        eventName: document.getElementById('event-name').value,
+        clientName: document.getElementById('event-client').value,
+        packageName: document.getElementById('event-package').value,
+        eventDate: document.getElementById('event-date').value,
+        status: document.getElementById('event-status').value,
+        totalRevenue: Number(document.getElementById('event-revenue').value),
+        estimatedCost: Number(document.getElementById('event-cost').value),
+        amountPaid: Number(document.getElementById('event-paid').value),
+        notes: document.getElementById('event-notes').value
+    };
+    const button = submitEvent.submitter;
+    if (button) button.disabled = true;
+    try {
+        await saveCateringEvent(event, id);
+        closeEventModal();
+    } catch (requestError) {
+        error.textContent = `Could not save the event: ${requestError.message}`;
+        error.classList.remove('hidden');
+    } finally {
+        if (button) button.disabled = false;
+    }
+}
+
+async function handleEventTableClick(clickEvent) {
+    const button = clickEvent.target.closest('[data-action]');
+    if (!button) return;
+    const id = Number(button.dataset.id);
+    const event = cateringEvents.find(item => item.id === id);
+    if (!event) return;
+    if (button.dataset.action === 'edit-event') {
+        openEventModal(event);
+        return;
+    }
+    if (!window.confirm(`Delete the catering event "${event.eventName}"?`)) return;
+    button.disabled = true;
+    try {
+        await deleteCateringEvent(id);
+    } catch (error) {
+        window.alert(`Could not delete the event: ${error.message}`);
+        button.disabled = false;
+    }
+}
+
+export function bindEvents() {
+    document.getElementById('add-catering-event').addEventListener('click', () => openEventModal());
+    document.querySelectorAll('.js-close-event-modal').forEach(button => button.addEventListener('click', closeEventModal));
+    document.getElementById('catering-event-form').addEventListener('submit', handleEventSubmit);
+    document.getElementById('catering-events-table').addEventListener('click', handleEventTableClick);
+    document.getElementById('catering-event-modal').addEventListener('click', event => {
+        if (event.target === event.currentTarget) closeEventModal();
+    });
+}
