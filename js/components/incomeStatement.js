@@ -31,7 +31,7 @@ export function render() {
             if (balance !== 0) {
                 totalRevenue += balance;
                 revList.innerHTML += `
-                    <div class="flex justify-between items-center text-slate-600">
+                    <div class="report-line">
                         <span>${acc.title}</span>
                         <span class="mono">${formatPHP(balance)}</span>
                     </div>
@@ -42,7 +42,7 @@ export function render() {
             if (balance !== 0) {
                 totalExpense += balance;
                 expList.innerHTML += `
-                    <div class="flex justify-between items-center text-slate-600">
+                    <div class="report-line">
                         <span>${acc.title}</span>
                         <span class="mono">${formatPHP(balance)}</span>
                     </div>
@@ -58,17 +58,16 @@ export function render() {
 
     const netAmountEl = document.getElementById('is-net-amount');
     const netTitleEl = document.getElementById('is-net-title');
+    const netSummaryEl = document.getElementById('income-net-summary');
+    const netIconEl = document.getElementById('income-net-icon');
+    const isLoss = netIncome < 0;
 
-    if (netIncome >= 0) {
-        netTitleEl.innerText = "Net Profit / Income";
-        netAmountEl.innerText = formatPHP(netIncome);
-        netAmountEl.className = "text-xl font-extrabold mono text-emerald-600";
-    } else {
-        netTitleEl.innerText = "Net Operating Loss";
-        netAmountEl.innerText = formatPHP(netIncome);
-        netAmountEl.className = "text-xl font-extrabold mono text-red-600";
-    }
-    if (!revList.children.length) revList.innerHTML = '<p class="text-slate-500">No revenue balances recorded.</p>';
-    if (!expList.children.length) expList.innerHTML = '<p class="text-slate-500">No expense balances recorded.</p>';
+    netTitleEl.innerText = isLoss ? 'Net Operating Loss' : 'Net Profit / Income';
+    netAmountEl.innerText = formatPHP(netIncome);
+    netSummaryEl.classList.toggle('is-loss', isLoss);
+    netIconEl.className = `fa-solid ${isLoss ? 'fa-arrow-trend-down' : 'fa-arrow-trend-up'}`;
+
+    if (!revList.children.length) revList.innerHTML = '<p class="report-empty">No revenue balances recorded.</p>';
+    if (!expList.children.length) expList.innerHTML = '<p class="report-empty">No expense balances recorded.</p>';
 
 }

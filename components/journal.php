@@ -8,7 +8,7 @@
                 <p>Transactions recorded in standard split peso and cent format.</p>
             </div>
             <div>
-                <button id="print-journal-button" class="journal-print-button">
+                <button type="button" id="print-journal-button" class="journal-print-button">
                     <i class="fa-solid fa-print" aria-hidden="true"></i>
                     <span>Print Journal</span>
                 </button>

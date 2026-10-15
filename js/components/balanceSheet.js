@@ -49,7 +49,7 @@ export function render() {
             if (balance !== 0) {
                 totalAssets += balance;
                 assetList.innerHTML += `
-                    <div class="flex justify-between items-center text-slate-600">
+                    <div class="report-line">
                         <span>${acc.title}</span>
                         <span class="mono">${formatPHP(balance)}</span>
                     </div>
@@ -60,7 +60,7 @@ export function render() {
             if (balance !== 0) {
                 totalLiabilities += balance;
                 liabList.innerHTML += `
-                    <div class="flex justify-between items-center text-slate-600">
+                    <div class="report-line">
                         <span>${acc.title}</span>
                         <span class="mono">${formatPHP(balance)}</span>
                     </div>
@@ -71,7 +71,7 @@ export function render() {
             if (balance !== 0) {
                 totalEquity += balance;
                 equityList.innerHTML += `
-                    <div class="flex justify-between items-center text-slate-600">
+                    <div class="report-line">
                         <span>${acc.title}</span>
                         <span class="mono">${formatPHP(balance)}</span>
                     </div>
@@ -84,19 +84,29 @@ export function render() {
     if (netIncome !== 0) {
         totalEquity += netIncome;
         equityList.innerHTML += `
-            <div class="flex justify-between items-center text-emerald-700 font-medium">
+            <div class="report-line report-line-equity">
                 <span>Net income from recorded entries</span>
                 <span class="mono">${formatPHP(netIncome)}</span>
             </div>
         `;
     }
 
+    const totalLiabilitiesAndEquity = totalLiabilities + totalEquity;
+    const isBalanced = Math.abs(totalAssets - totalLiabilitiesAndEquity) < 0.005;
+
     document.getElementById('bs-total-assets').innerText = formatPHP(totalAssets);
+    document.getElementById('bs-summary-assets').innerText = formatPHP(totalAssets);
     document.getElementById('bs-total-liabilities').innerText = formatPHP(totalLiabilities);
     document.getElementById('bs-total-equity').innerText = formatPHP(totalEquity);
-    document.getElementById('bs-total-liab-equity').innerText = formatPHP(totalLiabilities + totalEquity);
+    document.getElementById('bs-total-liab-equity').innerText = formatPHP(totalLiabilitiesAndEquity);
+
+    const balanceStatus = document.getElementById('bs-balance-status');
+    balanceStatus.classList.toggle('is-unbalanced', !isBalanced);
+    balanceStatus.querySelector('i').className = `fa-solid ${isBalanced ? 'fa-check' : 'fa-triangle-exclamation'}`;
+    balanceStatus.querySelector('span').innerText = isBalanced ? 'Balanced' : 'Review balance';
+
     for (const list of [assetList, liabList, equityList]) {
-        if (!list.children.length) list.innerHTML = '<p class="text-slate-500">No balances recorded.</p>';
+        if (!list.children.length) list.innerHTML = '<p class="report-empty">No balances recorded.</p>';
     }
 
 }

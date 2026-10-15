@@ -1,6 +1,6 @@
 /* Trial Balance */
 import { loadTemplate } from '../loader.js';import { chartOfAccounts, journalEntries } from '../state.js';
-import { splitAmount } from '../utils.js';
+import { formatPHP } from '../utils.js';
 
 export async function mount(parent) {
     parent.insertAdjacentHTML('beforeend', await loadTemplate('trialBalance'));
@@ -13,6 +13,7 @@ export function render() {
 
     let grandTotalDebit = 0;
     let grandTotalCredit = 0;
+    let accountCount = 0;
 
     chartOfAccounts.forEach(acc => {
         let totalDebits = 0;
@@ -40,30 +41,31 @@ export function render() {
 
         grandTotalDebit += debitBal;
         grandTotalCredit += creditBal;
-
-        const drSplit = debitBal > 0 ? splitAmount(debitBal) : { pesos: '', cents: '' };
-        const crSplit = creditBal > 0 ? splitAmount(creditBal) : { pesos: '', cents: '' };
+        accountCount += 1;
 
         const row = document.createElement('tr');
-        row.className = "hover:bg-slate-50 text-xs";
+        row.className = 'report-table-row';
         row.innerHTML = `
-            <td class="py-2.5 px-4 border border-slate-300 font-medium text-slate-800">${acc.title} <span class="text-[10px] text-slate-400 font-mono">(${acc.code})</span></td>
-            <td class="py-2.5 px-2 border-y border-l border-slate-300 text-right mono w-28 text-slate-800">${drSplit.pesos}</td>
-            <td class="py-2.5 px-1 border-y border-r border-slate-300 text-center mono w-8 text-slate-500 border-split">${drSplit.cents}</td>
-            <td class="py-2.5 px-2 border-y border-l border-slate-300 text-right mono w-28 text-slate-800">${crSplit.pesos}</td>
-            <td class="py-2.5 px-1 border-y border-r border-slate-300 text-center mono w-8 text-slate-500">${crSplit.cents}</td>
+            <td class="report-code mono">${acc.code}</td>
+            <td class="report-account">${acc.title}</td>
+            <td class="report-amount mono">${debitBal > 0 ? formatPHP(debitBal) : '—'}</td>
+            <td class="report-amount mono">${creditBal > 0 ? formatPHP(creditBal) : '—'}</td>
         `;
         tbody.appendChild(row);
     });
 
-    // Update Total Balances
-    const totalDr = splitAmount(grandTotalDebit);
-    const totalCr = splitAmount(grandTotalCredit);
+    document.getElementById('tb-total-debit').innerText = formatPHP(grandTotalDebit);
+    document.getElementById('tb-total-credit').innerText = formatPHP(grandTotalCredit);
+    document.getElementById('tb-account-count').innerText = `${accountCount} account${accountCount === 1 ? '' : 's'}`;
 
-    document.getElementById('tb-total-debit-p').innerText = totalDr.pesos;
-    document.getElementById('tb-total-debit-c').innerText = totalDr.cents;
-    document.getElementById('tb-total-credit-p').innerText = totalCr.pesos;
-    document.getElementById('tb-total-credit-c').innerText = totalCr.cents;
-    if (!tbody.children.length) tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No posted balances yet. Record a transaction to build your trial balance.</td></tr>';
+    const status = document.getElementById('tb-balance-status');
+    const isBalanced = Math.abs(grandTotalDebit - grandTotalCredit) < 0.005;
+    status.classList.toggle('is-unbalanced', !isBalanced);
+    status.querySelector('i').className = `fa-solid ${isBalanced ? 'fa-check' : 'fa-triangle-exclamation'}`;
+    status.querySelector('span').lastChild.textContent = isBalanced
+        ? ' · Debits and credits are balanced.'
+        : ' · Debits and credits do not balance.';
+
+    if (!accountCount) tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No posted balances yet. Record a transaction to build your trial balance.</td></tr>';
 
 }

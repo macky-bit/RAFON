@@ -12,7 +12,7 @@
         </div>
     </div>
 
-    <div class="flex items-center space-x-3">
+    <div class="header-actions flex items-center space-x-3">
         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
             All recorded entries
