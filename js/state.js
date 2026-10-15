@@ -5,6 +5,7 @@ export const journalEntries = [];
 export const auditLogs = [];
 export const cateringEvents = [];
 export const suppliers = [];
+export const ingredients = [];
 
 const listeners = [];
 
@@ -50,6 +51,14 @@ export async function loadState() {
     } catch (error) {
         console.warn('Suppliers are unavailable until the new SQL schema is run.', error);
         suppliers.splice(0, suppliers.length);
+    }
+
+    try {
+        const ingredientData = await apiRequest('api/ingredients.php');
+        ingredients.splice(0, ingredients.length, ...(ingredientData.ingredients || []));
+    } catch (error) {
+        console.warn('Ingredients are unavailable until migration 005 is run.', error);
+        ingredients.splice(0, ingredients.length);
     }
 }
 
@@ -124,4 +133,32 @@ export async function setSupplierStatus(id, status) {
     }
     emitChange();
     return result.supplier;
+}
+
+export async function saveIngredient(ingredient, id = null) {
+    const result = await apiRequest('api/ingredients.php', {
+        method: id ? 'PUT' : 'POST',
+        body: JSON.stringify(id ? { ...ingredient, id } : ingredient)
+    });
+    if (id) {
+        const index = ingredients.findIndex(item => item.id === id);
+        if (index >= 0) ingredients.splice(index, 1, result.ingredient);
+    } else {
+        ingredients.unshift(result.ingredient);
+    }
+    emitChange();
+    return result.ingredient;
+}
+
+export async function uploadIngredientImage(id, file) {
+    const form = new FormData();
+    form.append('id', String(id));
+    form.append('image', file);
+    const response = await fetch('api/ingredients.php?action=image', { method: 'POST', body: form });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `Image upload failed (${response.status}).`);
+    const index = ingredients.findIndex(item => item.id === id);
+    if (index >= 0) ingredients.splice(index, 1, payload.ingredient);
+    emitChange();
+    return payload.ingredient;
 }

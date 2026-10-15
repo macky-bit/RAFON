@@ -6,6 +6,7 @@ import * as sidebar from './components/sidebar.js';
 import * as header from './components/header.js';
 import * as dashboard from './components/dashboard.js';
 import * as suppliers from './components/suppliers.js';
+import * as ingredients from './components/ingredients.js';
 import * as journal from './components/journal.js';
 import * as ledger from './components/ledger.js';
 import * as trialBalance from './components/trialBalance.js';
@@ -17,6 +18,7 @@ import * as postModal from './components/postModal.js';
 // Refresh all accounting views & data dependencies
 function refreshAllViews() {
     suppliers.render();
+    ingredients.render();
     journal.render();
     ledger.render();
     trialBalance.render();
@@ -37,7 +39,7 @@ async function init() {
     ]);
     document.getElementById('view-loading')?.remove();
 
-    for (const view of [dashboard, suppliers, journal, ledger, trialBalance, incomeStatement, balanceSheet, auditTrail]) {
+    for (const view of [dashboard, suppliers, ingredients, journal, ledger, trialBalance, incomeStatement, balanceSheet, auditTrail]) {
         await view.mount(content);
     }
     await postModal.mount(document.getElementById('modal-root'));
@@ -49,6 +51,7 @@ async function init() {
     header.bindEvents({ onNewEntry: postModal.openModal });
     dashboard.bindEvents();
     suppliers.bindEvents();
+    ingredients.bindEvents();
     journal.bindEvents();
     ledger.bindEvents();
     postModal.bindEvents();

@@ -2,7 +2,7 @@
 import { emitChange } from './state.js';
 
 export function switchTab(tabId) {
-    const tabs = ['dashboard', 'suppliers', 'journal', 'ledger', 'trial-balance', 'income-statement', 'balance-sheet', 'audit-trail'];
+    const tabs = ['dashboard', 'suppliers', 'ingredients', 'journal', 'ledger', 'trial-balance', 'income-statement', 'balance-sheet', 'audit-trail'];
 
     tabs.forEach(tab => {
         const viewSection = document.getElementById(`${tab}-view`);
@@ -29,6 +29,7 @@ export function switchTab(tabId) {
     const titleMap = {
         'dashboard': 'Your business, at a glance.',
         'suppliers': 'Supplier Contacts',
+        'ingredients': 'Ingredient Inventory',
         'journal': 'General Journal (Book of Original Entry)',
         'ledger': 'General Ledger (T-Accounts)',
         'trial-balance': 'Trial Balance Summary Worksheet',
@@ -37,7 +38,7 @@ export function switchTab(tabId) {
         'audit-trail': 'System Security & Audit Trail'
     };
     document.getElementById('page-title').innerText = titleMap[tabId] || 'Business Ledger';
-    document.querySelector('#header-root > header')?.classList.toggle('hidden', tabId === 'suppliers');
+    document.querySelector('#header-root > header')?.classList.toggle('hidden', ['suppliers', 'ingredients'].includes(tabId));
 
     document.getElementById('content-area')?.focus({ preventScroll: true });
 
@@ -55,6 +56,6 @@ export function initNavigation() {
     });
 
     const requestedTab = window.location.hash.slice(1);
-    const availableTabs = ['dashboard', 'suppliers', 'journal', 'ledger', 'trial-balance', 'income-statement', 'balance-sheet', 'audit-trail'];
+    const availableTabs = ['dashboard', 'suppliers', 'ingredients', 'journal', 'ledger', 'trial-balance', 'income-statement', 'balance-sheet', 'audit-trail'];
     switchTab(requestedTab && availableTabs.includes(requestedTab) ? requestedTab : 'dashboard');
 }

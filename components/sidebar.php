@@ -42,6 +42,9 @@ $initials = mb_strtoupper(implode('', array_map(static fn(string $part): string 
                 <button id="nav-suppliers" data-tab="suppliers" class="nav-item">
                     <span class="nav-text truncate">Supplier List</span>
                 </button>
+                <button id="nav-ingredients" data-tab="ingredients" class="nav-item">
+                    <span class="nav-text truncate">Ingredients</span>
+                </button>
             </nav>
         </div>
 
