@@ -154,7 +154,7 @@ try {
     assert.ok(mobileIngredientDialog.left >= 0 && mobileIngredientDialog.right <= 390 && mobileIngredientDialog.top >= 0 && mobileIngredientDialog.bottom <= 700 && Math.abs(mobileIngredientDialog.centerX - 195) <= 2, 'Ingredient form fits and is centered on mobile');
     await call('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
     await evaluate(`document.querySelector('#ingredient-settings').close()`);
-    for (const tab of ['dashboard', 'ingredients', 'suppliers', 'journal', 'ledger', 'trial-balance', 'balance-sheet', 'profile', 'settings', 'audit-trail']) {
+    for (const tab of ['dashboard', 'ingredients', 'suppliers', 'journal', 'ledger', 'trial-balance', 'income-statement', 'balance-sheet', 'profile', 'settings', 'audit-trail']) {
         await evaluate(`(() => { const item = document.querySelector('#nav-${tab}'); const group = item.closest('.nav-group'); if (group) group.querySelector('.nav-dropdown-toggle').click(); item.click(); })()`);
         assert.equal(await evaluate(`document.querySelector('#${tab}-view').classList.contains('hidden')`), false);
         assert.equal(await evaluate(`document.querySelector('#nav-${tab}').getAttribute('aria-current')`), 'page');
@@ -162,10 +162,10 @@ try {
             assert.equal(await evaluate(`document.querySelector('#page-title').textContent`), tab === 'journal' ? 'General Journal' : 'General Ledger');
             assert.equal(await evaluate(`document.querySelector('#${tab}-view > div > div:first-child h2')`), null, `${tab} has no repeated title in its toolbar`);
         }
-        if (tab === 'trial-balance' || tab === 'balance-sheet') {
+        if (['trial-balance', 'income-statement', 'balance-sheet'].includes(tab)) {
             const reportHeader = await evaluate(`(() => { const card = document.querySelector('#${tab}-view .report-card').getBoundingClientRect(); const heading = document.querySelector('#${tab}-view .report-heading').getBoundingClientRect(); return { left: heading.left - card.left, right: card.right - heading.right, title: document.querySelector('#${tab}-view .report-heading h2').textContent }; })()`);
             assert.ok(Math.abs(reportHeader.left) <= 2 && Math.abs(reportHeader.right) <= 2, `${tab} color band reaches both sides of its card`);
-            assert.equal(reportHeader.title, tab === 'trial-balance' ? 'Trial Balance' : 'Balance Sheet');
+            assert.equal(reportHeader.title, { 'trial-balance': 'Trial Balance', 'income-statement': 'Income Statement', 'balance-sheet': 'Balance Sheet' }[tab]);
             writeFileSync(join(artifacts, `${tab}-desktop.png`), Buffer.from((await call('Page.captureScreenshot')).data, 'base64'));
         }
         if (tab === 'profile') {
@@ -193,9 +193,6 @@ try {
             writeFileSync(join(artifacts, 'audit-desktop.png'), Buffer.from((await call('Page.captureScreenshot')).data, 'base64'));
         }
     }
-    await evaluate(`(async () => (await import('./js/router.js')).switchTab('income-statement'))()`);
-    assert.ok(await evaluate(`(() => { const card = document.querySelector('#income-statement-view .report-card').getBoundingClientRect(); const heading = document.querySelector('#income-statement-view .report-heading').getBoundingClientRect(); return Math.abs(heading.left - card.left) <= 2 && Math.abs(card.right - heading.right) <= 2; })()`), 'Income Statement color band reaches both sides of its card');
-    writeFileSync(join(artifacts, 'income-statement-desktop.png'), Buffer.from((await call('Page.captureScreenshot')).data, 'base64'));
     await evaluate(`document.querySelector('#nav-dashboard').click()`);
     assert.equal(await evaluate(`document.querySelector('.brand-link').getAttribute('href')`), '/dashboard');
     await evaluate(`document.querySelector('.brand-link').click()`);

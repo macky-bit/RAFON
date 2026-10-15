@@ -46,6 +46,7 @@ $initials = mb_strtoupper(implode('', array_map(static fn(string $part): string 
                     <button type="button" id="nav-journal" data-tab="journal" class="nav-item w-full text-left px-3 py-2 text-xs hover:text-white"><span class="nav-text">General Journal</span></button>
                     <button type="button" id="nav-ledger" data-tab="ledger" class="nav-item w-full text-left px-3 py-2 text-xs hover:text-white"><span class="nav-text">General Ledger</span></button>
                     <button type="button" id="nav-trial-balance" data-tab="trial-balance" class="nav-item w-full text-left px-3 py-2 text-xs hover:text-white"><span class="nav-text">Trial Balance</span></button>
+                    <button type="button" id="nav-income-statement" data-tab="income-statement" class="nav-item w-full text-left px-3 py-2 text-xs hover:text-white"><span class="nav-text">Income Statement</span></button>
                     <button type="button" id="nav-balance-sheet" data-tab="balance-sheet" class="nav-item w-full text-left px-3 py-2 text-xs hover:text-white"><span class="nav-text">Balance Sheet</span></button>
                 </div>
             </div>
