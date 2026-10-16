@@ -13,7 +13,7 @@
         <label><span>Sort by</span><select id="supplier-sort"><option value="name">Name A–Z</option><option value="recent">Recently updated</option></select></label>
     </div>
 
-    <div class="supplier-results-heading"><p id="supplier-results-summary" aria-live="polite">0 suppliers</p><span>Contact and operations only · No payment tracking</span></div>
+    <div class="supplier-results-heading"><p id="supplier-results-summary" aria-live="polite">0 suppliers</p><span>Contact details and latest transaction</span></div>
     <div id="supplier-directory" class="supplier-directory" role="list"></div>
 
     <dialog id="supplier-modal" aria-labelledby="supplier-modal-title">
@@ -49,6 +49,26 @@
                     </div>
                 </div>
                 <div class="supplier-form-actions"><button type="button" class="js-close-supplier-modal supplier-secondary-button">Cancel</button><button type="submit" class="supplier-primary-button">Save supplier</button></div>
+            </form>
+        </div>
+    </dialog>
+
+    <dialog id="supplier-transaction-modal" aria-labelledby="supplier-transaction-modal-title">
+        <div class="supplier-modal-card">
+            <div class="supplier-modal-header">
+                <div><span class="eyebrow">Recent transaction</span><h2 id="supplier-transaction-modal-title">Add supplier transaction</h2></div>
+                <button type="button" class="js-close-supplier-transaction" aria-label="Close transaction form"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="supplier-transaction-form">
+                <input type="hidden" id="supplier-transaction-supplier-id">
+                <p id="supplier-transaction-form-error" class="form-error hidden" role="alert"></p>
+                <div class="supplier-form-grid">
+                    <div class="supplier-form-field"><label for="supplier-transaction-id">Transaction ID</label><input id="supplier-transaction-id" maxlength="50" required></div>
+                    <div class="supplier-form-field"><label for="supplier-transaction-title">Title</label><input id="supplier-transaction-title" maxlength="150" required></div>
+                    <div class="supplier-form-field supplier-form-wide"><label for="supplier-transaction-description">Description</label><textarea id="supplier-transaction-description" maxlength="500" rows="3" required></textarea></div>
+                    <div class="supplier-form-field supplier-form-wide"><label for="supplier-transaction-receipt">Receipt</label><input type="file" id="supplier-transaction-receipt" accept="application/pdf,image/jpeg,image/png,image/webp" required><small>PDF, JPG, PNG, or WebP · Up to 5 MB. Time and date are recorded automatically.</small></div>
+                </div>
+                <div class="supplier-form-actions"><button type="button" class="js-close-supplier-transaction supplier-secondary-button">Cancel</button><button type="submit" class="supplier-primary-button">Save transaction</button></div>
             </form>
         </div>
     </dialog>

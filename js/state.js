@@ -160,6 +160,22 @@ export async function setSupplierStatus(id, status) {
     return result.supplier;
 }
 
+export async function addSupplierTransaction(id, transaction, receipt) {
+    const form = new FormData();
+    form.append('supplierId', String(id));
+    form.append('transactionId', transaction.transactionId);
+    form.append('title', transaction.title);
+    form.append('description', transaction.description);
+    form.append('receipt', receipt);
+    const response = await fetch('api/suppliers.php?action=transaction', { method: 'POST', body: form });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `Transaction upload failed (${response.status}).`);
+    const index = suppliers.findIndex(item => item.id === id);
+    if (index >= 0) suppliers.splice(index, 1, payload.supplier);
+    emitChange();
+    return payload.supplier;
+}
+
 export async function saveIngredient(ingredient, id = null) {
     const result = await apiRequest('api/ingredients.php', {
         method: id ? 'PUT' : 'POST',

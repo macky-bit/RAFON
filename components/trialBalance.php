@@ -1,12 +1,6 @@
 <?php declare(strict_types=1); ?>
 <section id="trial-balance-view" class="hidden report-view">
     <div class="report-card">
-        <header class="report-heading">
-            <span class="report-eyebrow">Compañero Rafon Resto Grill &amp; Seafoods</span>
-            <h2>Trial Balance</h2>
-            <p>All recorded journal entries</p>
-        </header>
-
         <div class="report-table-wrap">
             <table class="report-table trial-balance-table">
                 <thead>

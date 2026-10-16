@@ -791,18 +791,45 @@ header .bg-emerald-500 {
 	margin-top: 0.15rem;
 }
 
-.supplier-operations p {
-	justify-content: space-between;
-}
-
-.supplier-operations p span {
-	color: var(--muted);
-}
-
-.supplier-operations p strong {
+.supplier-recent-transaction > strong {
 	color: var(--ink-soft);
-	font-weight: 600;
-	text-align: right;
+	display: block;
+	font-size: 0.78rem;
+	margin-top: 0.35rem;
+}
+
+.supplier-recent-transaction > p {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	overflow: hidden;
+}
+
+.supplier-transaction-id {
+	color: var(--tomato);
+	font-family: "JetBrains Mono", monospace;
+	font-size: 0.67rem;
+	font-weight: 700;
+}
+
+.supplier-transaction-meta {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	font-size: 0.66rem;
+	gap: 0.35rem 0.65rem;
+	justify-content: space-between;
+	margin-top: 0.65rem;
+}
+
+.supplier-transaction-meta a {
+	color: var(--leaf);
+	font-weight: 700;
+}
+
+.supplier-transaction-meta time,
+.supplier-transaction-empty {
+	color: var(--muted);
 }
 
 .supplier-missing {
@@ -891,7 +918,8 @@ header .bg-emerald-500 {
 	margin-top: 0.2rem;
 }
 
-#supplier-modal {
+#supplier-modal,
+#supplier-transaction-modal {
 	background: transparent;
 	border: 0;
 	color: var(--ink);
@@ -901,7 +929,12 @@ header .bg-emerald-500 {
 	width: calc(100% - 24px);
 }
 
-#supplier-modal::backdrop {
+#supplier-transaction-modal {
+	max-width: 620px;
+}
+
+#supplier-modal::backdrop,
+#supplier-transaction-modal::backdrop {
 	background: rgba(24, 23, 19, 0.68);
 }
 
@@ -940,8 +973,20 @@ header .bg-emerald-500 {
 	width: 44px;
 }
 
-#supplier-form {
+#supplier-form,
+#supplier-transaction-form {
 	padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+#supplier-transaction-form .supplier-form-grid {
+	margin-bottom: 1rem;
+}
+
+.supplier-form-field small {
+	color: var(--muted);
+	display: block;
+	font-size: 0.68rem;
+	margin-top: 0.35rem;
 }
 
 .supplier-form-section {
@@ -3029,12 +3074,17 @@ body:has(#journal-view:not(.hidden)) .header-actions {
 .journal-table th {
 	border: 0 !important;
 	border-bottom: 1px solid #a99b85 !important;
+	border-right: 1px solid #c8b99f !important;
 	color: #4b453d;
 	font-size: 0.72rem;
 	font-weight: 700;
 	letter-spacing: 0.08em;
 	padding: 0.9rem 1rem;
 	text-transform: uppercase;
+}
+
+.journal-table th:last-child {
+	border-right: 0 !important;
 }
 
 .journal-table tbody tr {
@@ -3081,8 +3131,13 @@ header,
 	background: transparent !important;
 	border: 0 !important;
 	border-bottom: 1px solid var(--line) !important;
+	border-right: 1px solid var(--line) !important;
 	font-size: 0.82rem;
 	line-height: 1.45;
+}
+
+.journal-table td.journal-row-actions-cell {
+	border-right: 0 !important;
 }
 
 .journal-table tbody tr:nth-child(3n) td {
@@ -3667,6 +3722,7 @@ header,
 	margin-inline: var(--report-gutter);
 }
 
+.report-card > :first-child:not(.report-heading),
 .report-card > .report-heading + * {
 	margin-top: var(--report-gutter);
 }

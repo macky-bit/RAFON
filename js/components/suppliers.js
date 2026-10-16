@@ -1,6 +1,6 @@
 import { loadTemplate } from '../loader.js';
-import { saveSupplier, setSupplierStatus, suppliers } from '../state.js';
-import { escapeHTML, formatPHP } from '../utils.js';
+import { addSupplierTransaction, saveSupplier, setSupplierStatus, suppliers } from '../state.js';
+import { escapeHTML } from '../utils.js';
 
 let lastSupplierTrigger = null;
 
@@ -20,6 +20,28 @@ function categoryIcon(category) {
     if (value.includes('equipment')) return 'fa-kitchen-set';
     if (value.includes('packag')) return 'fa-box-open';
     return 'fa-boxes-stacked';
+}
+
+function transactionDate(value) {
+    if (!value) return '';
+    const date = new Date(String(value).replace(' ', 'T'));
+    return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('en-PH', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+    }).format(date);
+}
+
+function recentTransaction(transaction) {
+    if (!transaction) {
+        return '<p class="supplier-transaction-empty">No transactions recorded yet.</p>';
+    }
+    return `<div class="supplier-transaction-id">${escapeHTML(transaction.transactionId)}</div>
+        <strong>${escapeHTML(transaction.title)}</strong>
+        <p>${escapeHTML(transaction.description)}</p>
+        <div class="supplier-transaction-meta">
+            <a href="${escapeHTML(transaction.receiptPath)}" target="_blank" rel="noopener"><i class="fa-solid fa-paperclip"></i> Receipt</a>
+            <time datetime="${escapeHTML(transaction.timeAndDate)}">${escapeHTML(transactionDate(transaction.timeAndDate))}</time>
+        </div>`;
 }
 
 function updateCategoryFilter() {
@@ -55,8 +77,6 @@ function filteredSuppliers() {
 
 function supplierCard(supplier) {
     const isInactive = supplier.status === 'Inactive';
-    const leadTime = supplier.leadTimeDays === null ? 'Not provided' : `${supplier.leadTimeDays} day${supplier.leadTimeDays === 1 ? '' : 's'}`;
-    const minimumOrder = Number(supplier.minimumOrder) > 0 ? formatPHP(supplier.minimumOrder) : 'None specified';
     return `<article class="supplier-directory-row ${isInactive ? 'supplier-is-inactive' : ''}" role="listitem">
         <div class="supplier-identity">
             <span class="supplier-directory-icon"><i class="fa-solid ${categoryIcon(supplier.category)}"></i></span>
@@ -73,15 +93,14 @@ function supplierCard(supplier) {
             <p><i class="fa-solid fa-envelope"></i>${textOrFallback(supplier.email)}</p>
             <p><i class="fa-solid fa-location-dot"></i>${textOrFallback(supplier.address)}</p>
         </div>
-        <div class="supplier-detail-group supplier-operations">
-            <span class="supplier-column-label">Operations</span>
-            <p><span>Delivery</span><strong>${textOrFallback(supplier.deliveryDays)}</strong></p>
-            <p><span>Lead time</span><strong>${escapeHTML(leadTime)}</strong></p>
-            <p><span>Minimum order</span><strong>${escapeHTML(minimumOrder)}</strong></p>
+        <div class="supplier-detail-group supplier-recent-transaction">
+            <span class="supplier-column-label">Recent transaction</span>
+            ${recentTransaction(supplier.latestTransaction)}
         </div>
         <div class="supplier-row-end">
             <span class="supplier-status supplier-status-${supplier.status.toLowerCase()}">${escapeHTML(supplier.status)}</span>
             <div class="supplier-row-actions">
+                <button type="button" data-supplier-action="transaction" data-id="${supplier.id}" aria-label="Add transaction for ${escapeHTML(supplier.businessName)}"><i class="fa-solid fa-receipt"></i><span>Transaction</span></button>
                 <button type="button" data-supplier-action="edit" data-id="${supplier.id}" aria-label="Edit ${escapeHTML(supplier.businessName)}"><i class="fa-solid fa-pen"></i><span>Edit</span></button>
                 <button type="button" data-supplier-action="status" data-id="${supplier.id}" aria-label="${isInactive ? 'Reactivate' : 'Archive'} ${escapeHTML(supplier.businessName)}"><i class="fa-solid ${isInactive ? 'fa-rotate-left' : 'fa-box-archive'}"></i><span>${isInactive ? 'Reactivate' : 'Archive'}</span></button>
             </div>
@@ -141,6 +160,20 @@ function closeSupplierModal() {
     document.getElementById('supplier-modal').close();
 }
 
+function openTransactionModal(supplier, trigger) {
+    lastSupplierTrigger = trigger || document.activeElement;
+    document.getElementById('supplier-transaction-form').reset();
+    document.getElementById('supplier-transaction-form-error').classList.add('hidden');
+    document.getElementById('supplier-transaction-supplier-id').value = supplier.id;
+    document.getElementById('supplier-transaction-modal-title').textContent = `Add transaction · ${supplier.businessName}`;
+    document.getElementById('supplier-transaction-modal').showModal();
+    document.getElementById('supplier-transaction-id').focus();
+}
+
+function closeTransactionModal() {
+    document.getElementById('supplier-transaction-modal').close();
+}
+
 async function handleSupplierSubmit(submitEvent) {
     submitEvent.preventDefault();
     const error = document.getElementById('supplier-form-error');
@@ -179,6 +212,10 @@ async function handleDirectoryClick(clickEvent) {
     if (!button) return;
     const supplier = suppliers.find(item => item.id === Number(button.dataset.id));
     if (!supplier) return;
+    if (button.dataset.supplierAction === 'transaction') {
+        openTransactionModal(supplier, button);
+        return;
+    }
     if (button.dataset.supplierAction === 'edit') {
         openSupplierModal(supplier, button);
         return;
@@ -195,11 +232,38 @@ async function handleDirectoryClick(clickEvent) {
     }
 }
 
+async function handleTransactionSubmit(submitEvent) {
+    submitEvent.preventDefault();
+    const error = document.getElementById('supplier-transaction-form-error');
+    const button = submitEvent.submitter;
+    error.classList.add('hidden');
+    if (button) button.disabled = true;
+    try {
+        await addSupplierTransaction(
+            Number(document.getElementById('supplier-transaction-supplier-id').value),
+            {
+                transactionId: document.getElementById('supplier-transaction-id').value.trim(),
+                title: document.getElementById('supplier-transaction-title').value.trim(),
+                description: document.getElementById('supplier-transaction-description').value.trim()
+            },
+            document.getElementById('supplier-transaction-receipt').files[0]
+        );
+        closeTransactionModal();
+    } catch (requestError) {
+        error.textContent = `Could not save the transaction: ${requestError.message}`;
+        error.classList.remove('hidden');
+    } finally {
+        if (button) button.disabled = false;
+    }
+}
+
 export function bindEvents() {
     document.getElementById('add-supplier').addEventListener('click', event => openSupplierModal(null, event.currentTarget));
     document.querySelectorAll('.js-close-supplier-modal').forEach(button => button.addEventListener('click', closeSupplierModal));
     document.getElementById('supplier-form').addEventListener('submit', handleSupplierSubmit);
+    document.getElementById('supplier-transaction-form').addEventListener('submit', handleTransactionSubmit);
     document.getElementById('supplier-directory').addEventListener('click', handleDirectoryClick);
+    document.querySelectorAll('.js-close-supplier-transaction').forEach(button => button.addEventListener('click', closeTransactionModal));
     for (const id of ['supplier-search', 'supplier-category-filter', 'supplier-status-filter', 'supplier-sort']) {
         document.getElementById(id).addEventListener(id === 'supplier-search' ? 'input' : 'change', render);
     }
@@ -208,6 +272,13 @@ export function bindEvents() {
     });
     document.getElementById('supplier-modal').addEventListener('close', () => {
         document.getElementById('supplier-form-error').classList.add('hidden');
+        if (lastSupplierTrigger?.isConnected) lastSupplierTrigger.focus();
+    });
+    document.getElementById('supplier-transaction-modal').addEventListener('click', event => {
+        if (event.target === event.currentTarget) closeTransactionModal();
+    });
+    document.getElementById('supplier-transaction-modal').addEventListener('close', () => {
+        document.getElementById('supplier-transaction-form-error').classList.add('hidden');
         if (lastSupplierTrigger?.isConnected) lastSupplierTrigger.focus();
     });
 }

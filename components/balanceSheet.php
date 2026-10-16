@@ -1,12 +1,6 @@
 <?php declare(strict_types=1); ?>
 <section id="balance-sheet-view" class="hidden report-view">
     <div class="report-card">
-        <header class="report-heading">
-            <span class="report-eyebrow">Compañero Rafon Resto Grill &amp; Seafoods</span>
-            <h2>Balance Sheet</h2>
-            <p>Based on all recorded journal entries</p>
-        </header>
-
         <div class="balance-report-grid">
             <section class="balance-column balance-assets" aria-labelledby="balance-assets-title">
                 <h4 id="balance-assets-title">Assets</h4>

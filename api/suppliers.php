@@ -56,12 +56,37 @@ function supplierRecord(array $row): array
         'status' => $row['status'],
         'notes' => $row['notes'] ?? '',
         'updatedAt' => $row['updated_at'],
+        'latestTransaction' => isset($row['transaction_record_id']) ? [
+            'transactionId' => $row['transaction_id'],
+            'title' => $row['transaction_title'],
+            'description' => $row['transaction_description'],
+            'receiptPath' => $row['receipt_path'],
+            'timeAndDate' => $row['transaction_created_at'],
+        ] : null,
     ];
+}
+
+function supplierSelect(): string
+{
+    return 'SELECT s.*,
+               t.id AS transaction_record_id,
+               t.transaction_id,
+               t.title AS transaction_title,
+               t.description AS transaction_description,
+               t.receipt_path,
+               t.created_at AS transaction_created_at
+            FROM suppliers s
+            LEFT JOIN supplier_transactions t ON t.id = (
+                SELECT newest.id FROM supplier_transactions newest
+                WHERE newest.supplier_id = s.id
+                ORDER BY newest.created_at DESC, newest.id DESC
+                LIMIT 1
+            )';
 }
 
 function findSupplier(PDO $pdo, int $id): array
 {
-    $statement = $pdo->prepare('SELECT * FROM suppliers WHERE id = ?');
+    $statement = $pdo->prepare(supplierSelect() . ' WHERE s.id = ?');
     $statement->execute([$id]);
     $supplier = $statement->fetch();
     if (!$supplier) {
@@ -122,10 +147,70 @@ try {
     $pdo = Database::connection();
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
+    if ($method === 'POST' && ($_GET['action'] ?? '') === 'transaction') {
+        $id = (int) ($_POST['supplierId'] ?? 0);
+        if ($id <= 0 || !isset($_FILES['receipt'])) {
+            respond(['error' => 'Choose a supplier and receipt to upload.'], 422);
+        }
+        $supplier = findSupplier($pdo, $id);
+        $transactionId = cleanText($_POST, 'transactionId', 'Transaction ID', 50, true);
+        $title = cleanText($_POST, 'title', 'Title', 150, true);
+        $description = cleanText($_POST, 'description', 'Description', 500, true);
+        $duplicate = $pdo->prepare('SELECT 1 FROM supplier_transactions WHERE transaction_id = ?');
+        $duplicate->execute([$transactionId]);
+        if ($duplicate->fetchColumn()) {
+            respond(['error' => 'That transaction ID is already in use.'], 422);
+        }
+
+        $receipt = $_FILES['receipt'];
+        if (($receipt['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            respond(['error' => 'The receipt upload did not complete.'], 422);
+        }
+        if (($receipt['size'] ?? 0) > 5 * 1024 * 1024) {
+            respond(['error' => 'The receipt must be 5 MB or smaller.'], 422);
+        }
+        $mime = (new finfo(FILEINFO_MIME_TYPE))->file($receipt['tmp_name']);
+        $extensions = [
+            'application/pdf' => 'pdf',
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+        ];
+        if (!isset($extensions[$mime])) {
+            respond(['error' => 'Upload a PDF, JPG, PNG, or WebP receipt.'], 422);
+        }
+
+        $uploadDirectory = __DIR__ . '/../uploads/supplier-receipts';
+        if (!is_dir($uploadDirectory) && !mkdir($uploadDirectory, 0755, true)) {
+            throw new RuntimeException('The receipt upload directory could not be created.');
+        }
+        $filename = $id . '-' . bin2hex(random_bytes(8)) . '.' . $extensions[$mime];
+        $destination = $uploadDirectory . '/' . $filename;
+        if (!move_uploaded_file($receipt['tmp_name'], $destination)) {
+            throw new RuntimeException('The uploaded receipt could not be stored.');
+        }
+
+        try {
+            $pdo->beginTransaction();
+            $statement = $pdo->prepare(
+                'INSERT INTO supplier_transactions
+                    (supplier_id, transaction_id, title, description, receipt_path)
+                 VALUES (?, ?, ?, ?, ?)'
+            );
+            $statement->execute([$id, $transactionId, $title, $description, 'uploads/supplier-receipts/' . $filename]);
+            writeAuditLog($pdo, 'Created Supplier Transaction', $id, $transactionId . ' / ' . $supplier['businessName']);
+            $pdo->commit();
+        } catch (Throwable $exception) {
+            @unlink($destination);
+            throw $exception;
+        }
+        respond(['supplier' => findSupplier($pdo, $id)], 201);
+    }
+
     if ($method === 'GET') {
         $rows = $pdo->query(
-            "SELECT * FROM suppliers
-             ORDER BY status = 'Active' DESC, is_preferred DESC, business_name ASC, id DESC"
+            supplierSelect() . "
+             ORDER BY s.status = 'Active' DESC, s.is_preferred DESC, s.business_name ASC, s.id DESC"
         )->fetchAll();
         respond(['suppliers' => array_map('supplierRecord', $rows)]);
     }
