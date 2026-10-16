@@ -11,7 +11,7 @@ const chrome = process.env.CHROME_PATH || join(cache,
     readdirSync(cache).find(name => name.startsWith('chromium-')), 'chrome-win64', 'chrome.exe');
 const artifacts = mkdtempSync(join(tmpdir(), 'rafon-ui-'));
 const testEmail = `ui-smoke-${Date.now()}@example.test`;
-const testJournalRef = `UI-JOURNAL-${Date.now()}`;
+let testJournalRef = '999';
 const testPassword = 'TestPassword123';
 const updatedPassword = 'UpdatedPassword456';
 const mysql = process.env.MYSQL_PATH || 'D:\\xammp\\mysql\\bin\\mysql.exe';
@@ -110,12 +110,15 @@ try {
     await pause(500);
     ready = false;
     for (let i = 0; i < 100; i++) {
-        try { ready = await evaluate(`!!document.querySelector('#entry-debit-account option[value]:not([value=""])')`); }
+        try { ready = await evaluate(`(async () => !!document.querySelector('#entry-date') && (await import('./js/state.js')).chartOfAccounts.length > 0)()`); }
         catch { ready = false; }
         if (ready) break;
         await pause(200);
     }
     assert.ok(ready, 'Login must open Dashboard and load chart of accounts');
+    const usedJournalRefs = await evaluate(`(async () => (await import('./js/state.js')).journalEntries.map(entry => entry.ref))()`);
+    testJournalRef = Array.from({ length: 900 }, (_, index) => String(999 - index)).find(ref => !usedJournalRefs.includes(ref));
+    assert.ok(testJournalRef, 'A three-digit PR reference is available for the smoke entry');
     assert.equal(await evaluate(`getComputedStyle(document.querySelector('#sidebar')).display`), 'flex', 'Authenticated navigation must load');
     assert.equal(await evaluate(`document.querySelector('#sidebar').tagName`), 'NAV', 'Navigation uses a top bar landmark');
     assert.equal(await evaluate(`document.querySelector('.user-status > .user-initials').tagName`), 'BUTTON', 'Initials open the profile menu');
@@ -225,6 +228,7 @@ try {
     await evaluate(`document.querySelector('[aria-controls="accounting-submenu"]').click(); document.querySelector('#nav-journal').click(); document.querySelector('#new-entry-button').click()`);
     assert.equal(await evaluate(`document.querySelector('#post-modal').open`), true, 'Journal Post Entry opens the transaction form');
     assert.ok(await evaluate(`document.querySelector('#post-modal .supplier-modal-card .supplier-form-section') !== null`), 'Journal form uses supplier card sections');
+    assert.ok(await evaluate(`(() => { const ref = document.querySelector('#entry-ref'); const amount = document.querySelector('#entry-debit-lines .entry-line-amount'); return ref.maxLength === 3 && ref.pattern === '[0-9]{3}' && amount.step === '1' && amount.min === '1'; })()`), 'New entries require a three-digit PR and whole-peso amount steps');
     writeFileSync(join(artifacts, 'journal-form.png'), Buffer.from((await call('Page.captureScreenshot')).data, 'base64'));
     await call('Emulation.setDeviceMetricsOverride', { width: 390, height: 700, deviceScaleFactor: 1, mobile: false });
     assert.ok(await evaluate(`(() => { const box = document.querySelector('#post-modal').getBoundingClientRect(); return box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight; })()`), 'Journal form fits the mobile viewport');
@@ -232,7 +236,7 @@ try {
     await evaluate(`document.querySelector('#post-modal .js-close-modal').click()`);
     await pause(50);
     assert.equal(await evaluate(`document.activeElement.id`), 'new-entry-button', 'Closing the form returns focus to Post Entry');
-    await evaluate(`document.querySelector('#new-entry-button').click(); document.querySelector('#entry-date').value='2026-10-15'; document.querySelector('#entry-ref').value='${testJournalRef}'; document.querySelector('#entry-debit-account').value='110'; document.querySelector('#entry-credit-account').value='210'; document.querySelector('#entry-debit-amount').value='125'; document.querySelector('#entry-credit-amount').value='125'; document.querySelector('#entry-explanation').value='UI smoke journal entry'; document.querySelector('#entry-form').requestSubmit()`);
+    await evaluate(`document.querySelector('#new-entry-button').click(); document.querySelector('#entry-date').value='2026-10-15'; document.querySelector('#entry-ref').value='${testJournalRef}'; document.querySelector('#entry-debit-lines .entry-line-account').value='101'; document.querySelector('#entry-debit-lines .entry-line-amount').value='100'; document.querySelector('[data-add-line="Debit"]').click(); document.querySelectorAll('#entry-debit-lines .entry-line-account')[1].value='503'; document.querySelectorAll('#entry-debit-lines .entry-line-amount')[1].value='25'; document.querySelector('#entry-credit-lines .entry-line-account').value='201'; document.querySelector('#entry-credit-lines .entry-line-amount').value='125'; document.querySelector('#entry-explanation').value='UI smoke journal entry'; document.querySelector('#entry-form').requestSubmit()`);
     let testJournalId;
     for (let i = 0; i < 50; i++) {
         testJournalId = await evaluate(`(async () => (await import('./js/state.js')).journalEntries.find(entry => entry.ref === '${testJournalRef}')?.id)()`);
@@ -240,12 +244,13 @@ try {
         await pause(100);
     }
     assert.ok(testJournalId, 'Post Entry saves the journal entry');
+    assert.equal(await evaluate(`(async () => (await import('./js/state.js')).journalEntries.find(entry => entry.id === ${testJournalId})?.lines.length)()`), 3, 'Compound entry saves all posting lines');
     assert.ok(await evaluate(`!!document.querySelector('[data-entry-action="edit"][data-id="${testJournalId}"]') && !!document.querySelector('[data-entry-action="delete"][data-id="${testJournalId}"]')`), 'Posted entry has edit and delete buttons');
     assert.equal(await evaluate(`getComputedStyle(document.querySelector('[data-entry-action="edit"][data-id="${testJournalId}"]').closest('td')).verticalAlign`), 'middle', 'Journal actions are centered vertically');
     await evaluate(`document.querySelector('[data-entry-action="edit"][data-id="${testJournalId}"]').click()`);
     assert.equal(await evaluate(`document.querySelector('#post-modal-title').textContent`), 'Edit journal entry');
     assert.equal(await evaluate(`document.querySelector('#entry-ref').value`), testJournalRef);
-    await evaluate(`document.querySelector('#entry-debit-amount').value='225'; document.querySelector('#entry-credit-amount').value='225'; document.querySelector('#entry-explanation').value='Updated UI smoke journal entry'; document.querySelector('#entry-form').requestSubmit()`);
+    await evaluate(`document.querySelector('#entry-debit-lines .entry-line-amount').value='200'; document.querySelector('#entry-credit-lines .entry-line-amount').value='225'; document.querySelector('#entry-explanation').value='Updated UI smoke journal entry'; document.querySelector('#entry-form').requestSubmit()`);
     for (let i = 0; i < 50; i++) {
         if (await evaluate(`(async () => (await import('./js/state.js')).journalEntries.find(entry => entry.id === ${testJournalId})?.debitAmount === 225)()`)) break;
         await pause(100);
@@ -281,7 +286,12 @@ try {
     assert.equal(await evaluate(`document.querySelector('#add-ingredient').offsetParent`), null, 'Ingredient action is hidden on Suppliers');
     assert.equal(await evaluate(`document.querySelectorAll('#supplier-directory .supplier-directory-row').length`), 2, 'Active suppliers are listed by default');
     assert.equal(await evaluate(`document.querySelector('#supplier-active-count').textContent`), '2');
-    assert.equal(await evaluate(`document.querySelector('#supplier-preferred-count').textContent`), '1');
+    assert.equal(await evaluate(`document.querySelector('#supplier-primary-count').textContent`), '1');
+    assert.equal(await evaluate(`document.querySelector('#supplier-backup-count').textContent`), '1');
+    assert.ok(await evaluate(`document.querySelector('#supplier-directory').textContent.includes('Primary') && document.querySelector('#supplier-directory').textContent.includes('Backup')`), 'Supplier roles appear in the directory');
+    await evaluate(`document.querySelector('#supplier-role-filter').value='Backup'; document.querySelector('#supplier-role-filter').dispatchEvent(new Event('change', { bubbles: true }))`);
+    assert.equal(await evaluate(`document.querySelectorAll('#supplier-directory .supplier-directory-row').length`), 1, 'Role filter shows backup suppliers');
+    await evaluate(`document.querySelector('#supplier-role-filter').value=''; document.querySelector('#supplier-role-filter').dispatchEvent(new Event('change', { bubbles: true }))`);
     await evaluate(`document.querySelector('#supplier-search').value='harbor'; document.querySelector('#supplier-search').dispatchEvent(new Event('input', { bubbles: true }))`);
     assert.equal(await evaluate(`document.querySelectorAll('#supplier-directory .supplier-directory-row').length`), 1, 'Supplier search filters the directory');
     await evaluate(`document.querySelector('#supplier-search').value=''; document.querySelector('#supplier-search').dispatchEvent(new Event('input', { bubbles: true }))`);

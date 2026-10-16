@@ -8,6 +8,7 @@ import * as header from './components/header.js';
 import * as dashboard from './components/dashboard.js';
 import * as suppliers from './components/suppliers.js';
 import * as ingredients from './components/ingredients.js';
+import * as recovery from './components/recovery.js';
 import * as journal from './components/journal.js';
 import * as ledger from './components/ledger.js';
 import * as trialBalance from './components/trialBalance.js';
@@ -41,7 +42,7 @@ async function init() {
     ]);
     document.getElementById('view-loading')?.remove();
 
-    for (const view of [dashboard, suppliers, ingredients, journal, ledger, trialBalance, incomeStatement, balanceSheet, auditTrail]) {
+    for (const view of [dashboard, suppliers, ingredients, journal, ledger, trialBalance, incomeStatement, balanceSheet, auditTrail, recovery]) {
         await view.mount(content);
     }
     content.insertAdjacentHTML('beforeend', await loadTemplate('account'));
@@ -54,6 +55,7 @@ async function init() {
     dashboard.bindEvents();
     suppliers.bindEvents();
     ingredients.bindEvents();
+    recovery.bindEvents();
     journal.bindEvents({ onNewEntry: postModal.openModal, onEditEntry: postModal.openModal });
     ledger.bindEvents();
     account.bindEvents();
@@ -75,8 +77,8 @@ async function init() {
     }
 
     ledger.populateFilter();
-    postModal.populateOptions();
     refreshAllViews();
+    if (window.location.hash === '#recovery') await recovery.refresh();
 }
 
 init().catch(error => {

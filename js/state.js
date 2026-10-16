@@ -191,6 +191,16 @@ export async function saveIngredient(ingredient, id = null) {
     return result.ingredient;
 }
 
+export async function deleteIngredient(id) {
+    await apiRequest('api/ingredients.php', {
+        method: 'DELETE',
+        body: JSON.stringify({ id })
+    });
+    const index = ingredients.findIndex(item => item.id === id);
+    if (index >= 0) ingredients.splice(index, 1);
+    emitChange();
+}
+
 export async function uploadIngredientImage(id, file) {
     const form = new FormData();
     form.append('id', String(id));

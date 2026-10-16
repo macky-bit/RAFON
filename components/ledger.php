@@ -12,9 +12,11 @@
             </div>
         </div>
 
-        <!-- T-Account Ledger Blocks -->
+        <p id="ledger-feedback" class="journal-feedback hidden" role="status" aria-live="polite"></p>
+
+        <!-- General Ledger account tables -->
         <div id="ledger-accounts-container" class="mt-6 space-y-8">
-            <!-- JS Dynamic T-Accounts render here -->
+            <!-- JS renders account tables here -->
         </div>
     </div>
 </section>

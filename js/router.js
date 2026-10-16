@@ -2,7 +2,7 @@
 import { emitChange } from './state.js';
 
 export function switchTab(tabId) {
-    const tabs = ['dashboard', 'suppliers', 'ingredients', 'journal', 'ledger', 'trial-balance', 'income-statement', 'balance-sheet', 'profile', 'settings', 'audit-trail'];
+    const tabs = ['dashboard', 'suppliers', 'ingredients', 'journal', 'ledger', 'trial-balance', 'income-statement', 'balance-sheet', 'profile', 'settings', 'recovery', 'audit-trail'];
 
     tabs.forEach(tab => {
         const viewSection = document.getElementById(`${tab}-view`);
@@ -28,6 +28,7 @@ export function switchTab(tabId) {
         'balance-sheet': 'Statement of Financial Position',
         'profile': 'My Profile',
         'settings': 'Account Setting',
+        'recovery': 'Backup & Recovery',
         'audit-trail': 'Audit Trail'
     };
     document.getElementById('page-title').innerText = titleMap[tabId] || 'Business Ledger';
@@ -38,6 +39,7 @@ export function switchTab(tabId) {
         ledger: ['Accounting records', 'Individual T-Account record of secondary entries.'],
         profile: ['Team account', 'Your identity and access details for this workspace.'],
         settings: ['Account preferences', 'Review the information and sign-in methods associated with your account.'],
+        recovery: ['Recover records', 'Restore deleted ingredients, catering events, voided journal entries, and archived suppliers.'],
         'audit-trail': ['Activity log', 'A timestamped history of changes to restaurant and accounting records.']
     };
     const [eyebrow, subtitle] = headerCopy[tabId] || [
@@ -48,7 +50,7 @@ export function switchTab(tabId) {
     document.getElementById('page-subtitle').textContent = subtitle;
     document.getElementById('add-ingredient').classList.toggle('hidden', tabId !== 'ingredients');
     document.getElementById('add-supplier').classList.toggle('hidden', tabId !== 'suppliers');
-    document.getElementById('header-status').classList.toggle('hidden', ['ingredients', 'suppliers', 'profile', 'settings', 'audit-trail'].includes(tabId));
+    document.getElementById('header-status').classList.toggle('hidden', ['ingredients', 'suppliers', 'profile', 'settings', 'recovery', 'audit-trail'].includes(tabId));
 
     document.getElementById('content-area')?.focus({ preventScroll: true });
 
@@ -66,6 +68,6 @@ export function initNavigation() {
     });
 
     const requestedTab = window.location.hash.slice(1);
-    const availableTabs = ['dashboard', 'suppliers', 'ingredients', 'journal', 'ledger', 'trial-balance', 'income-statement', 'balance-sheet', 'profile', 'settings', 'audit-trail'];
+    const availableTabs = ['dashboard', 'suppliers', 'ingredients', 'journal', 'ledger', 'trial-balance', 'income-statement', 'balance-sheet', 'profile', 'settings', 'recovery', 'audit-trail'];
     switchTab(requestedTab && availableTabs.includes(requestedTab) ? requestedTab : 'dashboard');
 }

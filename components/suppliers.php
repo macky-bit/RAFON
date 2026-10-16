@@ -2,7 +2,8 @@
 <section id="suppliers-view" class="hidden supplier-shell">
     <div class="supplier-stats" aria-label="Supplier summary">
         <div><span>Active suppliers</span><strong id="supplier-active-count">0</strong></div>
-        <div><span>Preferred suppliers</span><strong id="supplier-preferred-count">0</strong></div>
+        <div><span>Primary suppliers</span><strong id="supplier-primary-count">0</strong></div>
+        <div><span>Backup suppliers</span><strong id="supplier-backup-count">0</strong></div>
         <div><span>Categories</span><strong id="supplier-category-count">0</strong></div>
     </div>
 
@@ -10,6 +11,7 @@
         <label class="supplier-search" for="supplier-search"><span class="sr-only">Search suppliers</span><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="supplier-search" placeholder="Search supplier, contact, or product"></label>
         <label><span>Category</span><select id="supplier-category-filter"><option value="">All categories</option></select></label>
         <label><span>Status</span><select id="supplier-status-filter"><option value="Active">Active</option><option value="">All statuses</option><option value="Inactive">Inactive</option></select></label>
+        <label><span>Role</span><select id="supplier-role-filter"><option value="">All roles</option><option value="Primary">Primary</option><option value="Backup">Backup</option></select></label>
         <label><span>Sort by</span><select id="supplier-sort"><option value="name">Name A–Z</option><option value="recent">Recently updated</option></select></label>
     </div>
 
@@ -44,7 +46,7 @@
                         <div class="supplier-form-field"><label for="supplier-delivery-days">Delivery days</label><input id="supplier-delivery-days" maxlength="150" placeholder="e.g. Monday, Wednesday, Friday"></div>
                         <div class="supplier-form-field"><label for="supplier-lead-time">Lead time (days)</label><input type="number" id="supplier-lead-time" min="0" max="365" step="1"></div>
                         <div class="supplier-form-field"><label for="supplier-minimum-order">Minimum order (PHP)</label><input type="number" id="supplier-minimum-order" min="0" step="0.01" value="0"></div>
-                        <label class="supplier-preferred-control"><input type="checkbox" id="supplier-preferred"><span><strong>Preferred supplier</strong><small>Highlight this supplier in the directory.</small></span></label>
+                        <div class="supplier-form-field"><label for="supplier-role">Supplier role</label><select id="supplier-role"><option value="Backup">Backup</option><option value="Primary">Primary</option></select><small>Primary is your first choice; Backup is an alternative.</small></div>
                         <div class="supplier-form-field supplier-form-wide"><label for="supplier-notes">Notes</label><textarea id="supplier-notes" maxlength="1000" rows="3"></textarea></div>
                     </div>
                 </div>

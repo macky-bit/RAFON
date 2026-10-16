@@ -81,6 +81,35 @@
         </section>
     </div>
 
+    <section class="dashboard-faq" aria-labelledby="dashboard-faq-title">
+        <div class="panel-heading">
+            <span class="panel-icon"><i class="fa-solid fa-circle-question" aria-hidden="true"></i></span>
+            <div><h2 id="dashboard-faq-title">Frequently asked questions</h2><p>Quick answers about the figures and records in this workspace.</p></div>
+        </div>
+        <div class="dashboard-faq-list">
+            <details>
+                <summary>Where do the financial totals come from?</summary>
+                <p>The revenue, expenses, receivables, cash flow, and net profit figures use posted General Journal entries. Voided entries are excluded.</p>
+            </details>
+            <details>
+                <summary>Why is the cash balance different from net profit?</summary>
+                <p>Cash balance tracks money in Cash on Hand &amp; Bank. Net profit compares recorded revenue and expenses, including entries that do not move cash.</p>
+            </details>
+            <details>
+                <summary>Do catering bookings update the accounting totals?</summary>
+                <p>Catering bookings appear in the event section. Post the related transaction in the General Journal to include it in accounting totals and reports.</p>
+            </details>
+            <details>
+                <summary>How do I correct a posted transaction?</summary>
+                <p>Open General Journal and use Edit on the entry. The General Ledger and reports update from the revised posting.</p>
+            </details>
+            <details>
+                <summary>How do I restore a deleted or archived record?</summary>
+                <p>Open your profile menu and choose Backup &amp; Recovery. You can restore deleted ingredients and events, archived suppliers, and voided journal entries there.</p>
+            </details>
+        </div>
+    </section>
+
     <dialog id="catering-event-modal" aria-labelledby="catering-event-modal-title">
         <div class="event-modal-card">
             <div class="event-modal-header"><div><span class="eyebrow">Event record</span><h2 id="catering-event-modal-title">Add catering event</h2></div><button type="button" class="js-close-event-modal" aria-label="Close catering event form"><i class="fa-solid fa-xmark"></i></button></div>

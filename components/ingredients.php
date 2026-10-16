@@ -16,7 +16,7 @@ requireAuthenticatedUser();
 
         <div class="ingredients-table-wrap">
             <table class="ingredients-table">
-                <thead><tr><th>Ingredient</th><th>Category</th><th>Supplier</th><th>Stock</th><th>Cost / unit</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
+                <thead><tr><th>Ingredient</th><th>Category</th><th>Supplier</th><th>Stock</th><th>Cost / unit</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody id="ingredients-table-body"></tbody>
             </table>
         </div>

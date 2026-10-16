@@ -1,115 +1,100 @@
-/* General Ledger (T-Accounts) */
-import { loadTemplate } from '../loader.js';import { chartOfAccounts, journalEntries } from '../state.js';
-import { formatPHP } from '../utils.js';
+/* General Ledger: chronological postings with a running balance. */
+import { loadTemplate } from '../loader.js';
+import { chartOfAccounts, deleteEntry, journalEntries } from '../state.js';
+import { entryLines, escapeHTML } from '../utils.js';
+
+const money = amount => Number(amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const displayDate = date => {
+    const [year, month, day] = String(date).split('-');
+    return year && month && day ? `${Number(month)}/${Number(day)}/${year}` : String(date);
+};
 
 export async function mount(parent) {
     parent.insertAdjacentHTML('beforeend', await loadTemplate('ledger'));
 }
 
-// Fill the account filter once (original logic: skip options that already exist)
 export function populateFilter() {
-    const ledgerFilter = document.getElementById('ledger-filter');
-    chartOfAccounts.forEach(acc => {
-        if (!Array.from(ledgerFilter.options).some(o => o.value === acc.title)) {
-            ledgerFilter.innerHTML += `<option value="${acc.title}">${acc.code} - ${acc.title}</option>`;
-        }
-    });
+    const filter = document.getElementById('ledger-filter');
+    const selected = filter.value;
+    filter.innerHTML = '<option value="ALL">All Ledger Accounts</option>' + chartOfAccounts.map(account =>
+        `<option value="${escapeHTML(account.code)}">${escapeHTML(account.code)} - ${escapeHTML(account.title)}</option>`
+    ).join('');
+    if ([...filter.options].some(option => option.value === selected)) filter.value = selected;
 }
 
 export function bindEvents() {
     document.getElementById('ledger-filter').addEventListener('change', render);
+    document.getElementById('ledger-accounts-container').addEventListener('click', async event => {
+        const button = event.target.closest('[data-ledger-action="delete"]');
+        if (!button) return;
+        const entry = journalEntries.find(item => item.id === Number(button.dataset.id));
+        if (!entry) return;
+        if (!window.confirm(`Delete journal entry ${entry.ref}? All of its ledger postings will be removed from financial reports.`)) return;
+        button.disabled = true;
+        const feedback = document.getElementById('ledger-feedback');
+        try {
+            await deleteEntry(entry.id);
+            feedback.textContent = `Journal entry ${entry.ref} was deleted. All of its ledger postings were removed.`;
+            feedback.setAttribute('role', 'status');
+            feedback.classList.remove('is-error', 'hidden');
+            document.getElementById('ledger-filter').focus();
+        } catch (error) {
+            feedback.textContent = `Could not delete journal entry ${entry.ref}: ${error.message}`;
+            feedback.setAttribute('role', 'alert');
+            feedback.classList.add('is-error');
+            feedback.classList.remove('hidden');
+            button.disabled = false;
+        }
+    });
 }
 
-// 2. Render T-Accounts General Ledger
+function postingsFor(account) {
+    const postings = [];
+    for (const entry of journalEntries) {
+        entryLines(entry).forEach((line, order) => {
+            if (String(line.accountCode) === String(account.code)) postings.push({ entry, order, side: line.type.toLowerCase(), amount: Number(line.amount), particular: entry.explanation || entry.ref });
+        });
+    }
+    return postings.sort((a, b) => a.entry.date.localeCompare(b.entry.date) || a.entry.id - b.entry.id || a.order - b.order);
+}
+
+function accountTable(account, postings) {
+    let balance = 0;
+    const rows = postings.map(posting => {
+        balance += (posting.side === 'debit' ? 1 : -1) * posting.amount;
+        const balanceSide = balance < 0 ? 'Cr' : 'Dr';
+        return `<tr>
+            <td>${escapeHTML(displayDate(posting.entry.date))}</td>
+            <td>${escapeHTML(posting.particular)}</td>
+            <td class="mono">${escapeHTML(posting.entry.ref)}</td>
+            <td class="mono amount">${posting.side === 'debit' ? money(posting.amount) : ''}</td>
+            <td class="mono amount">${posting.side === 'credit' ? money(posting.amount) : ''}</td>
+            <td class="mono amount ledger-balance">${money(Math.abs(balance))} <span>${balanceSide}</span></td>
+            <td class="ledger-actions-cell"><button type="button" class="ledger-delete-button" data-ledger-action="delete" data-id="${posting.entry.id}" aria-label="Delete journal entry ${escapeHTML(posting.entry.ref)} and all its ledger postings" title="Delete journal entry"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button></td>
+        </tr>`;
+    }).join('');
+    const endingSide = balance === 0 ? '—' : (balance > 0 ? 'Dr' : 'Cr');
+    return `<article class="ledger-sheet">
+        <div class="ledger-sheet-scroll"><table class="ledger-table">
+            <caption><span>Amounts in Philippine Pesos</span><strong>GENERAL LEDGER</strong></caption>
+            <thead>
+                <tr class="ledger-account-heading"><th colspan="6">Account Name: ${escapeHTML(account.title)}</th><th>No. ${escapeHTML(account.code)}</th></tr>
+                <tr><th>Date</th><th>Particulars</th><th>PR</th><th>Debit</th><th>Credit</th><th>Balance</th><th class="ledger-actions-heading">Actions</th></tr>
+            </thead>
+            <tbody>${rows || '<tr><td colspan="7" class="ledger-empty">No postings for this account.</td></tr>'}</tbody>
+            <tfoot><tr><th colspan="5">Ending balance</th><td class="mono amount ledger-balance">${money(Math.abs(balance))} <span>${endingSide}</span></td><td></td></tr></tfoot>
+        </table></div>
+    </article>`;
+}
+
 export function render() {
     const container = document.getElementById('ledger-accounts-container');
-    const filterValue = document.getElementById('ledger-filter').value;
-    container.innerHTML = '';
-
-    chartOfAccounts.forEach(acc => {
-        if (filterValue !== 'ALL' && acc.title !== filterValue) return;
-
-        // Find all postings for this specific account
-        let debitPostings = [];
-        let creditPostings = [];
-        let totalDebits = 0;
-        let totalCredits = 0;
-
-        journalEntries.forEach(e => {
-            if (e.debitAcc === acc.title) {
-                debitPostings.push({ date: e.date, ref: e.ref, amount: e.debitAmount });
-                totalDebits += e.debitAmount;
-            }
-            if (e.creditAcc === acc.title) {
-                creditPostings.push({ date: e.date, ref: e.ref, amount: e.creditAmount });
-                totalCredits += e.creditAmount;
-            }
-        });
-
-        // Skip displaying unposted accounts if filtered ALL
-        if (filterValue === 'ALL' && debitPostings.length === 0 && creditPostings.length === 0) return;
-
-        // Calculate Net Balance according to Normal Account Balance Rules
-        let balanceText = "";
-        let netBal = 0;
-        if (acc.normal === 'Debit') {
-            netBal = totalDebits - totalCredits;
-            balanceText = `Bal Dr: ${formatPHP(netBal)}`;
-        } else {
-            netBal = totalCredits - totalDebits;
-            balanceText = `Bal Cr: ${formatPHP(netBal)}`;
-        }
-
-        // Create Classic T-Account Box
-        const accountBox = document.createElement('div');
-        accountBox.className = "bg-white rounded-xl border border-slate-300 shadow-sm overflow-hidden";
-        accountBox.innerHTML = `
-            <!-- Gold / Slate Classic Header -->
-            <div class="bg-amber-600 text-white px-4 py-3 flex justify-between items-center">
-                <div class="flex items-center space-x-2">
-                    <span class="bg-amber-800 text-amber-200 text-xs px-2 py-0.5 rounded font-mono">${acc.code}</span>
-                    <h3 class="font-bold text-sm tracking-wide uppercase">${acc.title}</h3>
-                </div>
-                <span class="text-xs font-semibold bg-amber-700/80 px-2.5 py-1 rounded">${balanceText}</span>
-            </div>
-
-            <!-- T-Account Layout Split Grid -->
-            <div class="grid grid-cols-2 divide-x divide-slate-400">
-                <!-- DEBIT SIDE -->
-                <div class="p-3">
-                    <div class="text-[11px] font-bold text-emerald-700 uppercase border-b border-slate-200 pb-1 mb-2 flex justify-between">
-                        <span>Debit (Dr.)</span>
-                        <span>₱</span>
-                    </div>
-                    <div class="space-y-1.5 text-xs">
-                        ${debitPostings.map(p => `
-                            <div class="flex justify-between items-center text-slate-700">
-                                <span class="text-[10px] text-slate-400">${p.date} <span class="font-mono text-slate-500">(${p.ref})</span></span>
-                                <span class="mono font-medium">${p.amount.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-
-                <!-- CREDIT SIDE -->
-                <div class="p-3 bg-slate-50/40">
-                    <div class="text-[11px] font-bold text-red-700 uppercase border-b border-slate-200 pb-1 mb-2 flex justify-between">
-                        <span>Credit (Cr.)</span>
-                        <span>₱</span>
-                    </div>
-                    <div class="space-y-1.5 text-xs">
-                        ${creditPostings.map(p => `
-                            <div class="flex justify-between items-center text-slate-700">
-                                <span class="text-[10px] text-slate-400">${p.date} <span class="font-mono text-slate-500">(${p.ref})</span></span>
-                                <span class="mono font-medium">${p.amount.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            </div>
-        `;
-        container.appendChild(accountBox);
-    });
-    if (!container.children.length) container.innerHTML = '<p class="empty-state">No postings for these accounts yet. Open General Journal to get started.</p>';
-
+    if (!container) return;
+    const filter = document.getElementById('ledger-filter').value;
+    const sheets = chartOfAccounts
+        .filter(account => filter === 'ALL' || account.code === filter)
+        .map(account => ({ account, postings: postingsFor(account) }))
+        .filter(({ postings }) => filter !== 'ALL' || postings.length)
+        .map(({ account, postings }) => accountTable(account, postings));
+    container.innerHTML = sheets.join('') || '<p class="empty-state">No postings for these accounts yet. Open General Journal to get started.</p>';
 }

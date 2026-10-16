@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS journal_lines (
     CONSTRAINT fk_journal_lines_account
         FOREIGN KEY (account_id) REFERENCES accounts(id)
         ON UPDATE CASCADE ON DELETE RESTRICT,
-    CONSTRAINT uq_journal_entry_line_type UNIQUE (journal_entry_id, line_type),
+    INDEX idx_journal_lines_entry_type (journal_entry_id, line_type),
     CONSTRAINT chk_journal_lines_positive_amount CHECK (amount > 0),
     INDEX idx_journal_lines_account (account_id)
 ) ENGINE=InnoDB;
@@ -116,6 +116,7 @@ CREATE TABLE IF NOT EXISTS catering_events (
     created_by VARCHAR(100) NOT NULL DEFAULT 'System User',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
 
     CONSTRAINT chk_catering_revenue_nonnegative
         CHECK (total_revenue >= 0),
@@ -194,6 +195,7 @@ CREATE TABLE IF NOT EXISTS ingredients (
     image_path VARCHAR(255) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
 
     CONSTRAINT fk_ingredients_supplier
         FOREIGN KEY (supplier_id) REFERENCES suppliers(id)

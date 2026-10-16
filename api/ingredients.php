@@ -72,7 +72,7 @@ function findIngredient(PDO $pdo, int $id): array
     $statement = $pdo->prepare(
         'SELECT i.*, s.business_name AS supplier_name
          FROM ingredients i LEFT JOIN suppliers s ON s.id = i.supplier_id
-         WHERE i.ingredient_id = ?'
+         WHERE i.ingredient_id = ? AND i.deleted_at IS NULL'
     );
     $statement->execute([$id]);
     $ingredient = $statement->fetch();
@@ -161,6 +161,7 @@ try {
         $rows = $pdo->query(
             'SELECT i.*, s.business_name AS supplier_name
              FROM ingredients i LEFT JOIN suppliers s ON s.id = i.supplier_id
+             WHERE i.deleted_at IS NULL
              ORDER BY i.ingredient_name ASC, i.ingredient_id DESC'
         )->fetchAll();
         respond(['ingredients' => array_map('ingredientRecord', $rows)]);
@@ -186,7 +187,7 @@ try {
     if ($id <= 0) {
         respond(['error' => 'A valid ingredient ID is required.'], 422);
     }
-    findIngredient($pdo, $id);
+    $existing = findIngredient($pdo, $id);
 
     if ($method === 'PUT') {
         $values = validatedIngredient($payload);
@@ -202,7 +203,17 @@ try {
         respond(['ingredient' => findIngredient($pdo, $id)]);
     }
 
-    header('Allow: GET, POST, PUT');
+    if ($method === 'DELETE') {
+        $pdo->beginTransaction();
+        $statement = $pdo->prepare('UPDATE ingredients SET deleted_at = CURRENT_TIMESTAMP WHERE ingredient_id = ? AND deleted_at IS NULL');
+        $statement->execute([$id]);
+        writeIngredientAudit($pdo, 'Deleted Ingredient', $id, $existing['name']);
+        $pdo->commit();
+
+        respond(['deletedId' => $id]);
+    }
+
+    header('Allow: GET, POST, PUT, DELETE');
     respond(['error' => 'Method not allowed.'], 405);
 } catch (PDOException $exception) {
     if (isset($pdo) && $pdo->inTransaction()) {

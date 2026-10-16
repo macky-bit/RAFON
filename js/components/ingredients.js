@@ -1,5 +1,5 @@
 import { loadTemplate } from '../loader.js';
-import { ingredients, saveIngredient, suppliers, uploadIngredientImage } from '../state.js';
+import { deleteIngredient, ingredients, saveIngredient, suppliers, uploadIngredientImage } from '../state.js';
 import { escapeHTML, formatPHP } from '../utils.js';
 
 let lastTrigger = null;
@@ -66,7 +66,7 @@ function rowTemplate(item) {
         <td class="mono">${escapeHTML(String(item.stock))} ${escapeHTML(item.unit)}</td>
         <td class="mono">${escapeHTML(formatPHP(item.cost))}</td>
         <td><span class="ingredient-status ingredient-status-${statusClass}"><i aria-hidden="true"></i>${status}</span></td>
-        <td><button type="button" class="ingredient-edit-button" data-ingredient-id="${item.id}" aria-label="Edit ${escapeHTML(item.name)}"><i class="fa-solid fa-pen" aria-hidden="true"></i></button></td>
+        <td><div class="journal-row-actions"><button type="button" data-ingredient-id="${item.id}" data-action="edit" aria-label="Edit ${escapeHTML(item.name)}" title="Edit"><i class="fa-solid fa-pen" aria-hidden="true"></i></button><button type="button" data-ingredient-id="${item.id}" data-action="delete" aria-label="Delete ${escapeHTML(item.name)}" title="Delete"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button></div></td>
     </tr>`;
 }
 
@@ -152,10 +152,23 @@ export function bindEvents() {
     ['ingredient-search', 'ingredient-category-filter', 'ingredient-stock-filter'].forEach(id => {
         document.getElementById(id)?.addEventListener(id === 'ingredient-search' ? 'input' : 'change', render);
     });
-    document.getElementById('ingredients-table-body')?.addEventListener('click', event => {
+    document.getElementById('ingredients-table-body')?.addEventListener('click', async event => {
         const button = event.target.closest('[data-ingredient-id]');
         if (!button) return;
         const item = ingredients.find(entry => Number(entry.id) === Number(button.dataset.ingredientId));
-        if (item) openSettings(item, button);
+        if (!item) return;
+        if (button.dataset.action === 'edit') {
+            openSettings(item, button);
+            return;
+        }
+        if (button.dataset.action === 'delete' && window.confirm(`Delete ingredient "${item.name}"?`)) {
+            button.disabled = true;
+            try {
+                await deleteIngredient(Number(item.id));
+            } catch (error) {
+                button.disabled = false;
+                window.alert(`Could not delete the ingredient: ${error.message}`);
+            }
+        }
     });
 }

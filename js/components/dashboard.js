@@ -7,7 +7,7 @@ import {
     journalEntries,
     saveCateringEvent
 } from '../state.js';
-import { escapeHTML, formatPHP } from '../utils.js';
+import { entryLines, escapeHTML, formatPHP } from '../utils.js';
 
 export async function mount(parent) {
     parent.insertAdjacentHTML('beforeend', await loadTemplate('overview'));
@@ -18,8 +18,11 @@ function accountTotals() {
         let debit = 0;
         let credit = 0;
         journalEntries.forEach(entry => {
-            if (entry.debitAcc === account.title) debit += Number(entry.debitAmount) || 0;
-            if (entry.creditAcc === account.title) credit += Number(entry.creditAmount) || 0;
+            for (const line of entryLines(entry)) {
+                if (String(line.accountCode) !== String(account.code)) continue;
+                if (line.type === 'Debit') debit += Number(line.amount) || 0;
+                else credit += Number(line.amount) || 0;
+            }
         });
         const balance = ['Asset', 'Expense'].includes(account.category) ? debit - credit : credit - debit;
         return { ...account, debit, credit, balance };
@@ -57,7 +60,7 @@ function renderFinancialSummary(totals) {
 function renderPerformanceChart() {
     const container = document.getElementById('performance-chart');
     if (!container) return;
-    const accountCategory = new Map(chartOfAccounts.map(account => [account.title, account.category]));
+    const accountCategory = new Map(chartOfAccounts.map(account => [String(account.code), account.category]));
     const now = new Date();
     const months = Array.from({ length: 6 }, (_, offset) => {
         const date = new Date(now.getFullYear(), now.getMonth() - (5 - offset), 1);
@@ -72,8 +75,11 @@ function renderPerformanceChart() {
     journalEntries.forEach(entry => {
         const month = byMonth.get(String(entry.date || '').slice(0, 7));
         if (!month) return;
-        if (accountCategory.get(entry.creditAcc) === 'Revenue') month.revenue += Number(entry.creditAmount) || 0;
-        if (accountCategory.get(entry.debitAcc) === 'Expense') month.expenses += Number(entry.debitAmount) || 0;
+        for (const line of entryLines(entry)) {
+            const category = accountCategory.get(String(line.accountCode));
+            if (category === 'Revenue') month.revenue += (line.type === 'Credit' ? 1 : -1) * Number(line.amount);
+            if (category === 'Expense') month.expenses += (line.type === 'Debit' ? 1 : -1) * Number(line.amount);
+        }
     });
     const maximum = Math.max(...months.flatMap(month => [month.revenue, month.expenses]), 1);
     container.innerHTML = months.map(month => `
@@ -163,13 +169,19 @@ function renderRecentEntries() {
         table.innerHTML = '<tr><td colspan="5" class="dashboard-empty-state">No entries yet. Open General Journal to record your first transaction.</td></tr>';
         return;
     }
-    table.innerHTML = entries.map(entry => `<tr>
+    table.innerHTML = entries.map(entry => {
+        const lines = entryLines(entry);
+        const titles = lines.map(line => line.accountTitle).join(' / ');
+        const debit = lines.filter(line => line.type === 'Debit').reduce((sum, line) => sum + Number(line.amount), 0);
+        const credit = lines.filter(line => line.type === 'Credit').reduce((sum, line) => sum + Number(line.amount), 0);
+        return `<tr>
         <td class="py-3 px-4">${escapeHTML(entry.date)}</td>
-        <td class="py-3 px-4"><strong>${escapeHTML(entry.debitAcc)} / ${escapeHTML(entry.creditAcc)}</strong><small class="dashboard-table-note">${escapeHTML(entry.explanation)}</small></td>
+        <td class="py-3 px-4"><strong>${escapeHTML(titles)}</strong><small class="dashboard-table-note">${escapeHTML(entry.explanation)}</small></td>
         <td class="py-3 px-4 mono">${escapeHTML(entry.ref)}</td>
-        <td class="py-3 px-4 amount-column mono">${formatPHP(entry.debitAmount)}</td>
-        <td class="py-3 px-4 amount-column mono">${formatPHP(entry.creditAmount)}</td>
-    </tr>`).join('');
+        <td class="py-3 px-4 amount-column mono">${formatPHP(debit)}</td>
+        <td class="py-3 px-4 amount-column mono">${formatPHP(credit)}</td>
+    </tr>`;
+    }).join('');
 }
 
 export function render() {

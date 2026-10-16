@@ -62,7 +62,7 @@ function eventRecord(array $row): array
 
 function findEvent(PDO $pdo, int $id): array
 {
-    $statement = $pdo->prepare('SELECT * FROM catering_events WHERE id = ?');
+    $statement = $pdo->prepare('SELECT * FROM catering_events WHERE id = ? AND deleted_at IS NULL');
     $statement->execute([$id]);
     $event = $statement->fetch();
     if (!$event) {
@@ -108,7 +108,7 @@ try {
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
     if ($method === 'GET') {
-        $rows = $pdo->query('SELECT * FROM catering_events ORDER BY event_date DESC, id DESC')->fetchAll();
+        $rows = $pdo->query('SELECT * FROM catering_events WHERE deleted_at IS NULL ORDER BY event_date DESC, id DESC')->fetchAll();
         respond(['events' => array_map('eventRecord', $rows)]);
     }
 
@@ -156,7 +156,7 @@ try {
 
     if ($method === 'DELETE') {
         $pdo->beginTransaction();
-        $statement = $pdo->prepare('DELETE FROM catering_events WHERE id = ?');
+        $statement = $pdo->prepare('UPDATE catering_events SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL');
         $statement->execute([$id]);
         $log = $pdo->prepare(
             'INSERT INTO audit_logs (user_name, action, reference_number, details, status) VALUES (?, ?, ?, ?, ?)'

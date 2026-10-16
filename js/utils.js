@@ -24,3 +24,11 @@ export function escapeHTML(value) {
         '"': '&quot;'
     })[character]);
 }
+
+export function entryLines(entry) {
+    if (Array.isArray(entry.lines)) return entry.lines;
+    return [
+        { type: 'Debit', accountCode: entry.debitCode, accountTitle: entry.debitAcc, amount: Number(entry.debitAmount) },
+        { type: 'Credit', accountCode: entry.creditCode, accountTitle: entry.creditAcc, amount: Number(entry.creditAmount) }
+    ];
+}

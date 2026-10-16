@@ -32,44 +32,79 @@ function validDate(string $date): bool
     return $parsed !== false && $parsed->format('Y-m-d') === $date;
 }
 
-function validatedTransaction(array $payload, PDO $pdo): array
+function validatedTransaction(array $payload, PDO $pdo, ?int $existingId = null): array
 {
     $date = trim((string) ($payload['date'] ?? ''));
     $reference = trim((string) ($payload['ref'] ?? ''));
-    $debitCode = trim((string) ($payload['debitCode'] ?? ''));
-    $creditCode = trim((string) ($payload['creditCode'] ?? ''));
     $explanation = trim((string) ($payload['explanation'] ?? ''));
-    $debitAmount = round((float) ($payload['debitAmount'] ?? 0), 2);
-    $creditAmount = round((float) ($payload['creditAmount'] ?? 0), 2);
+    $lines = $payload['lines'] ?? null;
 
     if (!validDate($date)) respond(['error' => 'A valid transaction date is required.'], 422);
     if ($reference === '' || strlen($reference) > 50) respond(['error' => 'The reference is required and must not exceed 50 characters.'], 422);
+    if (!preg_match('/^[0-9]{3}$/D', $reference)) {
+        $existingReference = null;
+        if ($existingId !== null) {
+            $referenceStatement = $pdo->prepare("SELECT reference_number FROM journal_entries WHERE id = ? AND status = 'POSTED'");
+            $referenceStatement->execute([$existingId]);
+            $existingReference = $referenceStatement->fetchColumn();
+        }
+        if ($existingReference !== $reference) respond(['error' => 'PR reference code must be exactly 3 digits.'], 422);
+    }
     if ($explanation === '' || strlen($explanation) > 500) respond(['error' => 'The explanation is required and must not exceed 500 characters.'], 422);
-    if ($debitCode === '' || $creditCode === '' || $debitCode === $creditCode) respond(['error' => 'Choose two different debit and credit accounts.'], 422);
-    if ($debitAmount <= 0 || $creditAmount <= 0 || (int) round($debitAmount * 100) !== (int) round($creditAmount * 100)) {
-        respond(['error' => 'Debit and credit amounts must be positive and equal.'], 422);
+    if (!is_array($lines) || count($lines) < 2 || count($lines) > 30) {
+        respond(['error' => 'Add at least one debit and one credit line (30 lines maximum).'], 422);
+    }
+    $totals = ['Debit' => 0, 'Credit' => 0];
+    $codes = [];
+    foreach ($lines as &$line) {
+        if (!is_array($line)) respond(['error' => 'Each journal line must be an object.'], 422);
+        $type = (string) ($line['type'] ?? '');
+        $code = trim((string) ($line['accountCode'] ?? ''));
+        $amount = $line['amount'] ?? null;
+        if (!isset($totals[$type]) || $code === '' || !is_numeric($amount) ||
+            !is_finite((float) $amount) || (float) $amount <= 0 || (float) $amount > 9999999999999.99 ||
+            abs((float) $amount * 100 - round((float) $amount * 100)) > 0.00001) {
+            respond(['error' => 'Each line needs a valid account and a positive amount with at most two decimal places.'], 422);
+        }
+        $line = ['type' => $type, 'accountCode' => $code, 'amount' => round((float) $amount, 2)];
+        $totals[$type] += (int) round($line['amount'] * 100);
+        $codes[$code] = true;
+    }
+    unset($line);
+    if ($totals['Debit'] <= 0 || $totals['Credit'] <= 0 || $totals['Debit'] !== $totals['Credit']) {
+        respond(['error' => 'Total debits and credits must be positive and equal.'], 422);
     }
 
-    $statement = $pdo->prepare('SELECT id, code, title FROM accounts WHERE code IN (?, ?) AND is_active = TRUE');
-    $statement->execute([$debitCode, $creditCode]);
+    $placeholders = implode(',', array_fill(0, count($codes), '?'));
+    $statement = $pdo->prepare("SELECT id, code, title FROM accounts WHERE code IN ({$placeholders}) AND is_active = TRUE");
+    $statement->execute(array_keys($codes));
     $accounts = [];
     foreach ($statement->fetchAll() as $account) $accounts[$account['code']] = $account;
-    if (!isset($accounts[$debitCode], $accounts[$creditCode])) {
-        respond(['error' => 'One or both selected accounts do not exist or are inactive.'], 422);
+    if (count($accounts) !== count($codes)) {
+        respond(['error' => 'One or more selected accounts do not exist or are inactive.'], 422);
     }
 
-    return compact('date', 'reference', 'debitCode', 'creditCode', 'explanation', 'debitAmount', 'creditAmount', 'accounts');
+    return compact('date', 'reference', 'explanation', 'lines', 'accounts');
 }
 
 function transactionRecord(int $id, array $data): array
 {
-    $debit = $data['accounts'][$data['debitCode']];
-    $credit = $data['accounts'][$data['creditCode']];
+    $lines = array_map(static function (array $line) use ($data): array {
+        return [
+            'type' => $line['type'], 'accountCode' => $line['accountCode'],
+            'accountTitle' => $data['accounts'][$line['accountCode']]['title'],
+            'amount' => $line['amount'],
+        ];
+    }, $data['lines']);
+    $debits = array_values(array_filter($lines, static fn(array $line): bool => $line['type'] === 'Debit'));
+    $credits = array_values(array_filter($lines, static fn(array $line): bool => $line['type'] === 'Credit'));
     return [
         'id' => $id, 'date' => $data['date'], 'ref' => $data['reference'],
-        'debitAcc' => $debit['title'], 'debitCode' => $data['debitCode'],
-        'debitAmount' => $data['debitAmount'], 'creditAcc' => $credit['title'],
-        'creditCode' => $data['creditCode'], 'creditAmount' => $data['creditAmount'],
+        'lines' => $lines,
+        'debitAcc' => $debits[0]['accountTitle'], 'debitCode' => $debits[0]['accountCode'],
+        'debitAmount' => array_sum(array_column($debits, 'amount')),
+        'creditAcc' => $credits[0]['accountTitle'], 'creditCode' => $credits[0]['accountCode'],
+        'creditAmount' => array_sum(array_column($credits, 'amount')),
         'explanation' => $data['explanation'],
     ];
 }
@@ -97,27 +132,45 @@ function loadAccountingData(PDO $pdo): array
     )->fetchAll();
 
     $entries = $pdo->query(
-        "SELECT je.id, DATE_FORMAT(je.entry_date, '%Y-%m-%d') AS date,
-                je.reference_number AS ref, debit_account.title AS debitAcc,
-                debit_account.code AS debitCode, debit_line.amount AS debitAmount,
-                credit_account.title AS creditAcc, credit_account.code AS creditCode,
-                credit_line.amount AS creditAmount, je.explanation
-         FROM journal_entries je
-         INNER JOIN journal_lines debit_line
-             ON debit_line.journal_entry_id = je.id AND debit_line.line_type = 'Debit'
-         INNER JOIN accounts debit_account ON debit_account.id = debit_line.account_id
-         INNER JOIN journal_lines credit_line
-             ON credit_line.journal_entry_id = je.id AND credit_line.line_type = 'Credit'
-         INNER JOIN accounts credit_account ON credit_account.id = credit_line.account_id
-         WHERE je.status = 'POSTED' ORDER BY je.entry_date, je.id"
+        "SELECT id, DATE_FORMAT(entry_date, '%Y-%m-%d') AS date,
+                reference_number AS ref, explanation
+         FROM journal_entries WHERE status = 'POSTED' ORDER BY entry_date, id"
     )->fetchAll();
-
+    $entryIndex = [];
     foreach ($entries as &$entry) {
         $entry['id'] = (int) $entry['id'];
-        $entry['debitAmount'] = (float) $entry['debitAmount'];
-        $entry['creditAmount'] = (float) $entry['creditAmount'];
+        $entry['lines'] = [];
+        $entry['debitAmount'] = 0.0;
+        $entry['creditAmount'] = 0.0;
+        $entryIndex[$entry['id']] = &$entry;
     }
     unset($entry);
+    $lines = $pdo->query(
+        "SELECT jl.journal_entry_id, jl.line_type AS type, a.code AS accountCode,
+                a.title AS accountTitle, jl.amount
+         FROM journal_lines jl
+         JOIN journal_entries je ON je.id = jl.journal_entry_id
+         JOIN accounts a ON a.id = jl.account_id
+         WHERE je.status = 'POSTED'
+         ORDER BY jl.journal_entry_id, FIELD(jl.line_type, 'Debit', 'Credit'), jl.id"
+    )->fetchAll();
+    foreach ($lines as $line) {
+        $entry = &$entryIndex[(int) $line['journal_entry_id']];
+        $line['amount'] = (float) $line['amount'];
+        unset($line['journal_entry_id']);
+        $entry['lines'][] = $line;
+        if ($line['type'] === 'Debit') {
+            $entry['debitAcc'] ??= $line['accountTitle'];
+            $entry['debitCode'] ??= $line['accountCode'];
+            $entry['debitAmount'] += $line['amount'];
+        } else {
+            $entry['creditAcc'] ??= $line['accountTitle'];
+            $entry['creditCode'] ??= $line['accountCode'];
+            $entry['creditAmount'] += $line['amount'];
+        }
+        unset($entry);
+    }
+    unset($entryIndex);
 
     $logs = $pdo->query(
         "SELECT DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:%s') AS timestamp,
@@ -160,10 +213,14 @@ try {
         respond(['id' => $id, 'auditLog' => $auditLog]);
     }
 
-    $data = validatedTransaction($payload, $pdo);
-    $debitAccount = $data['accounts'][$data['debitCode']];
-    $creditAccount = $data['accounts'][$data['creditCode']];
-    $detail = $debitAccount['title'] . ' / ' . $creditAccount['title'];
+    $data = validatedTransaction($payload, $pdo, $method === 'PUT' ? $id : null);
+    if (count($data['lines']) > 2) {
+        $detail = 'Compound entry: ' . $data['explanation'];
+    } else {
+        $debitLine = $data['lines'][0]['type'] === 'Debit' ? $data['lines'][0] : $data['lines'][1];
+        $creditLine = $data['lines'][0]['type'] === 'Credit' ? $data['lines'][0] : $data['lines'][1];
+        $detail = $data['accounts'][$debitLine['accountCode']]['title'] . ' / ' . $data['accounts'][$creditLine['accountCode']]['title'];
+    }
 
     $pdo->beginTransaction();
     if ($method === 'POST') {
@@ -188,8 +245,9 @@ try {
         'INSERT INTO journal_lines (journal_entry_id, account_id, line_type, amount) VALUES (?, ?, ?, ?)'
     );
     if ($method === 'PUT') $pdo->prepare('DELETE FROM journal_lines WHERE journal_entry_id = ?')->execute([$id]);
-    $lineStatement->execute([$id, $debitAccount['id'], 'Debit', $data['debitAmount']]);
-    $lineStatement->execute([$id, $creditAccount['id'], 'Credit', $data['creditAmount']]);
+    foreach ($data['lines'] as $line) {
+        $lineStatement->execute([$id, $data['accounts'][$line['accountCode']]['id'], $line['type'], $line['amount']]);
+    }
 
     $auditLog = journalAudit($pdo, $method === 'POST' ? 'Posted Transaction' : 'Edited Transaction', $data['reference'], $detail);
     $pdo->commit();

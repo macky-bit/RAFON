@@ -1,6 +1,6 @@
 /* Income Statement */
 import { loadTemplate } from '../loader.js';import { chartOfAccounts, journalEntries } from '../state.js';
-import { formatPHP } from '../utils.js';
+import { entryLines, formatPHP } from '../utils.js';
 
 export async function mount(parent) {
     parent.insertAdjacentHTML('beforeend', await loadTemplate('incomeStatement'));
@@ -22,8 +22,11 @@ export function render() {
         let totalCredits = 0;
 
         journalEntries.forEach(e => {
-            if (e.debitAcc === acc.title) totalDebits += e.debitAmount;
-            if (e.creditAcc === acc.title) totalCredits += e.creditAmount;
+            for (const line of entryLines(e)) {
+                if (String(line.accountCode) !== String(acc.code)) continue;
+                if (line.type === 'Debit') totalDebits += Number(line.amount);
+                else totalCredits += Number(line.amount);
+            }
         });
 
         if (acc.category === 'Revenue') {

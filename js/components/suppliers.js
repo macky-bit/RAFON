@@ -60,6 +60,7 @@ function filteredSuppliers() {
     const query = document.getElementById('supplier-search')?.value.trim().toLowerCase() || '';
     const category = document.getElementById('supplier-category-filter')?.value || '';
     const status = document.getElementById('supplier-status-filter')?.value || '';
+    const role = document.getElementById('supplier-role-filter')?.value || '';
     const sort = document.getElementById('supplier-sort')?.value || 'name';
 
     const matches = suppliers.filter(supplier => {
@@ -67,7 +68,8 @@ function filteredSuppliers() {
             .join(' ').toLowerCase();
         return (!query || searchable.includes(query))
             && (!category || supplier.category === category)
-            && (!status || supplier.status === status);
+            && (!status || supplier.status === status)
+            && (!role || (supplier.isPreferred ? 'Primary' : 'Backup') === role);
     });
 
     return matches.sort((a, b) => sort === 'recent'
@@ -81,7 +83,7 @@ function supplierCard(supplier) {
         <div class="supplier-identity">
             <span class="supplier-directory-icon"><i class="fa-solid ${categoryIcon(supplier.category)}"></i></span>
             <div>
-                <div class="supplier-label-line"><span class="supplier-category">${escapeHTML(supplier.category)}</span>${supplier.isPreferred ? '<span class="supplier-preferred-badge"><i class="fa-solid fa-star"></i> Preferred</span>' : ''}</div>
+                <div class="supplier-label-line"><span class="supplier-category">${escapeHTML(supplier.category)}</span><span class="supplier-priority-badge ${supplier.isPreferred ? 'supplier-priority-primary' : 'supplier-priority-backup'}"><i class="fa-solid ${supplier.isPreferred ? 'fa-star' : 'fa-layer-group'}" aria-hidden="true"></i> ${supplier.isPreferred ? 'Primary' : 'Backup'}</span></div>
                 <h3>${escapeHTML(supplier.businessName)}</h3>
                 <p>${textOrFallback(supplier.productsSupplied, 'Products not provided')}</p>
             </div>
@@ -114,16 +116,18 @@ export function render() {
     updateCategoryFilter();
 
     const active = suppliers.filter(supplier => supplier.status === 'Active');
-    const preferred = active.filter(supplier => supplier.isPreferred);
+    const primary = active.filter(supplier => supplier.isPreferred);
+    const backup = active.filter(supplier => !supplier.isPreferred);
     const categories = new Set(active.map(supplier => supplier.category));
     document.getElementById('supplier-active-count').textContent = String(active.length);
-    document.getElementById('supplier-preferred-count').textContent = String(preferred.length);
+    document.getElementById('supplier-primary-count').textContent = String(primary.length);
+    document.getElementById('supplier-backup-count').textContent = String(backup.length);
     document.getElementById('supplier-category-count').textContent = String(categories.size);
 
     const visible = filteredSuppliers();
     document.getElementById('supplier-results-summary').textContent = `${visible.length} supplier${visible.length === 1 ? '' : 's'}`;
     if (!visible.length) {
-        directory.innerHTML = `<div class="supplier-empty-state"><span><i class="fa-solid fa-truck-field"></i></span><div><strong>${suppliers.length ? 'No suppliers match these filters.' : 'No suppliers have been added yet.'}</strong><p>${suppliers.length ? 'Try changing the search, category, or status.' : 'Add the first supplier to start your operational directory.'}</p></div></div>`;
+        directory.innerHTML = `<div class="supplier-empty-state"><span><i class="fa-solid fa-truck-field"></i></span><div><strong>${suppliers.length ? 'No suppliers match these filters.' : 'No suppliers have been added yet.'}</strong><p>${suppliers.length ? 'Try changing the search, category, status, or role.' : 'Add the first supplier to start your operational directory.'}</p></div></div>`;
         return;
     }
     directory.innerHTML = visible.map(supplierCard).join('');
@@ -149,7 +153,7 @@ function openSupplierModal(supplier = null, trigger = null) {
     document.getElementById('supplier-delivery-days').value = supplier?.deliveryDays || '';
     document.getElementById('supplier-lead-time').value = supplier?.leadTimeDays ?? '';
     document.getElementById('supplier-minimum-order').value = supplier?.minimumOrder ?? 0;
-    document.getElementById('supplier-preferred').checked = supplier?.isPreferred || false;
+    document.getElementById('supplier-role').value = supplier?.isPreferred ? 'Primary' : 'Backup';
     document.getElementById('supplier-notes').value = supplier?.notes || '';
     document.getElementById('supplier-modal-title').textContent = supplier ? 'Edit supplier' : 'Add supplier';
     document.getElementById('supplier-modal').showModal();
@@ -190,7 +194,7 @@ async function handleSupplierSubmit(submitEvent) {
         deliveryDays: document.getElementById('supplier-delivery-days').value,
         leadTimeDays: document.getElementById('supplier-lead-time').value,
         minimumOrder: Number(document.getElementById('supplier-minimum-order').value),
-        isPreferred: document.getElementById('supplier-preferred').checked,
+        isPreferred: document.getElementById('supplier-role').value === 'Primary',
         status: document.getElementById('supplier-record-status').value,
         notes: document.getElementById('supplier-notes').value
     };
@@ -264,7 +268,7 @@ export function bindEvents() {
     document.getElementById('supplier-transaction-form').addEventListener('submit', handleTransactionSubmit);
     document.getElementById('supplier-directory').addEventListener('click', handleDirectoryClick);
     document.querySelectorAll('.js-close-supplier-transaction').forEach(button => button.addEventListener('click', closeTransactionModal));
-    for (const id of ['supplier-search', 'supplier-category-filter', 'supplier-status-filter', 'supplier-sort']) {
+    for (const id of ['supplier-search', 'supplier-category-filter', 'supplier-status-filter', 'supplier-role-filter', 'supplier-sort']) {
         document.getElementById(id).addEventListener(id === 'supplier-search' ? 'input' : 'change', render);
     }
     document.getElementById('supplier-modal').addEventListener('click', event => {

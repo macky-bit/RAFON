@@ -1,6 +1,6 @@
 /* Balance Sheet */
 import { loadTemplate } from '../loader.js';import { chartOfAccounts, journalEntries } from '../state.js';
-import { formatPHP } from '../utils.js';
+import { entryLines, formatPHP } from '../utils.js';
 
 export async function mount(parent) {
     parent.insertAdjacentHTML('beforeend', await loadTemplate('balanceSheet'));
@@ -27,8 +27,11 @@ export function render() {
     chartOfAccounts.forEach(acc => {
         let dr = 0, cr = 0;
         journalEntries.forEach(e => {
-            if (e.debitAcc === acc.title) dr += e.debitAmount;
-            if (e.creditAcc === acc.title) cr += e.creditAmount;
+            for (const line of entryLines(e)) {
+                if (String(line.accountCode) !== String(acc.code)) continue;
+                if (line.type === 'Debit') dr += Number(line.amount);
+                else cr += Number(line.amount);
+            }
         });
 
         if (acc.category === 'Revenue') totalRevenue += (cr - dr);
@@ -40,8 +43,11 @@ export function render() {
     chartOfAccounts.forEach(acc => {
         let dr = 0, cr = 0;
         journalEntries.forEach(e => {
-            if (e.debitAcc === acc.title) dr += e.debitAmount;
-            if (e.creditAcc === acc.title) cr += e.creditAmount;
+            for (const line of entryLines(e)) {
+                if (String(line.accountCode) !== String(acc.code)) continue;
+                if (line.type === 'Debit') dr += Number(line.amount);
+                else cr += Number(line.amount);
+            }
         });
 
         if (acc.category === 'Asset') {
