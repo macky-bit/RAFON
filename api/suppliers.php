@@ -223,10 +223,10 @@ try {
         $statement = $pdo->prepare(
             'INSERT INTO suppliers
                 (business_name, category, contact_person, phone, email, address, products_supplied,
-                 delivery_days, lead_time_days, minimum_order, is_preferred, status, notes)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                 delivery_days, lead_time_days, minimum_order, is_preferred, status, notes, archived_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = \'Inactive\' THEN CURRENT_TIMESTAMP ELSE NULL END)'
         );
-        $statement->execute($values);
+        $statement->execute([...$values, $values[11]]);
         $id = (int) $pdo->lastInsertId();
         writeAuditLog($pdo, 'Created Supplier', $id, $values[0] . ' / ' . $values[1]);
         $pdo->commit();

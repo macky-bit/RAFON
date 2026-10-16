@@ -1,6 +1,7 @@
 import { loadTemplate } from '../loader.js';
 import { deleteIngredient, ingredients, saveIngredient, suppliers, uploadIngredientImage } from '../state.js';
 import { escapeHTML, formatPHP } from '../utils.js';
+import { confirmAction } from '../confirmAction.js';
 
 let lastTrigger = null;
 
@@ -161,7 +162,7 @@ export function bindEvents() {
             openSettings(item, button);
             return;
         }
-        if (button.dataset.action === 'delete' && window.confirm(`Delete ingredient "${item.name}"?`)) {
+        if (button.dataset.action === 'delete' && await confirmAction({ title: 'Delete ingredient?', message: `${item.name} will be removed from inventory. You can restore it from Backup & Recovery.`, trigger: button })) {
             button.disabled = true;
             try {
                 await deleteIngredient(Number(item.id));

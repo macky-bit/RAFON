@@ -2,6 +2,7 @@
 import { loadTemplate } from '../loader.js';
 import { chartOfAccounts, deleteEntry, journalEntries } from '../state.js';
 import { entryLines, escapeHTML } from '../utils.js';
+import { confirmAction } from '../confirmAction.js';
 
 const money = amount => Number(amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const displayDate = date => {
@@ -29,7 +30,7 @@ export function bindEvents() {
         if (!button) return;
         const entry = journalEntries.find(item => item.id === Number(button.dataset.id));
         if (!entry) return;
-        if (!window.confirm(`Delete journal entry ${entry.ref}? All of its ledger postings will be removed from financial reports.`)) return;
+        if (!await confirmAction({ title: 'Delete journal entry?', message: `Entry ${entry.ref} and all its ledger postings will be removed from financial reports. You can restore it from Backup & Recovery.`, trigger: button })) return;
         button.disabled = true;
         const feedback = document.getElementById('ledger-feedback');
         try {

@@ -4586,25 +4586,6 @@ header,
 .entry-balance.is-balanced { background: #e8f5eb; color: #225a33; }
 @media (max-width: 560px) { .entry-line-row { grid-template-columns: minmax(0, 1fr) 36px; } .entry-line-row > div:first-child { grid-column: 1 / -1; } .entry-line-row > div:nth-child(2) { grid-column: 1; } }
 
-.dashboard-faq {
-	background: rgba(255, 253, 248, 0.94);
-	border: 1px solid var(--line);
-	border-radius: 9px;
-	box-shadow: 0 5px 16px rgba(50, 39, 22, 0.035);
-	margin-top: 0.9rem;
-	padding: 1.2rem;
-}
-.dashboard-faq-list { display: grid; gap: 0.75rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.dashboard-faq details { align-self: start; border: 1px solid var(--line); border-radius: var(--radius-control); background: #fff; min-width: 0; }
-.dashboard-faq summary { color: var(--ink); cursor: pointer; font-size: 0.86rem; font-weight: 700; list-style: none; padding: 0.85rem 2.2rem 0.85rem 1rem; position: relative; }
-.dashboard-faq summary::-webkit-details-marker { display: none; }
-.dashboard-faq summary::after { color: var(--saffron-deep); content: '+'; font-size: 1.2rem; line-height: 1; position: absolute; right: 1rem; top: 0.75rem; }
-.dashboard-faq details[open] summary::after { content: '−'; }
-.dashboard-faq summary:focus-visible { border-radius: var(--radius-control); outline: 2px solid var(--saffron-deep); outline-offset: 2px; }
-.dashboard-faq details[open] { background: #fffdf8; }
-.dashboard-faq details p { border-top: 1px solid var(--line); color: var(--muted); font-size: 0.8rem; line-height: 1.55; padding: 0.8rem 1rem 1rem; }
-@media (max-width: 760px) { .dashboard-faq-list { grid-template-columns: 1fr; } }
-
 .ledger-sheet { background: #fff; break-inside: avoid; }
 .ledger-sheet-scroll { overflow-x: auto; }
 .ledger-table { border-collapse: collapse; color: #262626; font-size: 0.8rem; min-width: 720px; width: 100%; }
@@ -4614,7 +4595,7 @@ header,
 .ledger-table th, .ledger-table td { border: 1px solid #444; padding: 0.5rem 0.65rem; }
 .ledger-table thead tr:last-child th { background: #f8f8f8; font-weight: 700; text-align: left; }
 .ledger-table thead tr:last-child th:nth-child(n+4) { text-align: right; }
-.ledger-table .ledger-account-heading th { background: #fff; font-size: 0.86rem; text-align: left; text-transform: uppercase; }
+.ledger-table .ledger-account-heading th { background: #fff; font-size: 1.1rem; text-align: left; text-transform: uppercase; }
 .ledger-table .ledger-account-heading th:last-child { text-align: right; white-space: nowrap; }
 .ledger-table .amount { text-align: right; white-space: nowrap; }
 .ledger-table .ledger-balance { background: #e8e8e8; }
@@ -4867,3 +4848,44 @@ header,
 	margin-inline: 1.25rem;
 	padding: 1rem 0 1.25rem;
 }
+/* Confirmation for delete and archive actions */
+#action-confirm-dialog {
+	background: transparent;
+	border: 0;
+	color: #1e293b;
+	max-width: min(420px, calc(100vw - 32px));
+	padding: 0;
+	width: 100%;
+}
+
+#action-confirm-dialog::backdrop { background: rgba(15, 23, 42, 0.58); }
+
+.action-confirm-card {
+	background: #fff;
+	border: 1px solid #e2e8f0;
+	border-radius: 16px;
+	box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+	padding: 24px;
+}
+
+.action-confirm-icon {
+	align-items: center;
+	background: #fef2f2;
+	border-radius: 12px;
+	color: #dc2626;
+	display: inline-flex;
+	font-size: 20px;
+	height: 44px;
+	justify-content: center;
+	margin-bottom: 14px;
+	width: 44px;
+}
+
+.action-confirm-card h2 { font-size: 18px; font-weight: 700; margin: 0 0 8px; }
+.action-confirm-card p { color: #475569; font-size: 14px; line-height: 1.5; margin: 0; }
+.action-confirm-buttons { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+.action-confirm-buttons button { border-radius: 8px; font-size: 14px; font-weight: 600; min-height: 40px; padding: 8px 16px; }
+.action-confirm-buttons [data-confirm-choice="cancel"] { background: #f1f5f9; color: #334155; }
+.action-confirm-buttons [data-confirm-choice="confirm"] { background: #dc2626; color: #fff; }
+.action-confirm-buttons [data-confirm-choice="confirm"]:hover { background: #b91c1c; }
+.action-confirm-buttons button:focus-visible { outline: 3px solid #f59e0b; outline-offset: 2px; }

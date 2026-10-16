@@ -26,7 +26,6 @@
             </div>
             <form id="supplier-form">
                 <input type="hidden" id="supplier-id">
-                <input type="hidden" id="supplier-record-status" value="Active">
                 <p id="supplier-form-error" class="form-error hidden" role="alert"></p>
                 <div class="supplier-form-section">
                     <div><span class="supplier-form-index">01</span><h3>Business and contact</h3></div>
@@ -47,6 +46,7 @@
                         <div class="supplier-form-field"><label for="supplier-lead-time">Lead time (days)</label><input type="number" id="supplier-lead-time" min="0" max="365" step="1"></div>
                         <div class="supplier-form-field"><label for="supplier-minimum-order">Minimum order (PHP)</label><input type="number" id="supplier-minimum-order" min="0" step="0.01" value="0"></div>
                         <div class="supplier-form-field"><label for="supplier-role">Supplier role</label><select id="supplier-role"><option value="Backup">Backup</option><option value="Primary">Primary</option></select><small>Primary is your first choice; Backup is an alternative.</small></div>
+                        <div class="supplier-form-field"><label for="supplier-record-status">Status</label><select id="supplier-record-status"><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div>
                         <div class="supplier-form-field supplier-form-wide"><label for="supplier-notes">Notes</label><textarea id="supplier-notes" maxlength="1000" rows="3"></textarea></div>
                     </div>
                 </div>

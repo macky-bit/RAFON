@@ -24,7 +24,7 @@ export function switchTab(tabId) {
         'journal': 'General Journal',
         'ledger': 'General Ledger',
         'trial-balance': 'Trial Balance Summary Worksheet',
-        'income-statement': 'Income & Expenditure Statement',
+        'income-statement': 'Income Statement',
         'balance-sheet': 'Statement of Financial Position',
         'profile': 'My Profile',
         'settings': 'Account Setting',
@@ -39,7 +39,7 @@ export function switchTab(tabId) {
         ledger: ['Accounting records', 'Individual T-Account record of secondary entries.'],
         profile: ['Team account', 'Your identity and access details for this workspace.'],
         settings: ['Account preferences', 'Review the information and sign-in methods associated with your account.'],
-        recovery: ['Recover records', 'Restore deleted ingredients, catering events, voided journal entries, and archived suppliers.'],
+        recovery: ['Recover records', 'Restore deleted ingredients and voided journal entries.'],
         'audit-trail': ['Activity log', 'A timestamped history of changes to restaurant and accounting records.']
     };
     const [eyebrow, subtitle] = headerCopy[tabId] || [

@@ -8,6 +8,7 @@ import {
     saveCateringEvent
 } from '../state.js';
 import { entryLines, escapeHTML, formatPHP } from '../utils.js';
+import { confirmAction } from '../confirmAction.js';
 
 export async function mount(parent) {
     parent.insertAdjacentHTML('beforeend', await loadTemplate('overview'));
@@ -259,7 +260,7 @@ async function handleEventTableClick(clickEvent) {
         openEventModal(event);
         return;
     }
-    if (!window.confirm(`Delete the catering event "${event.eventName}"?`)) return;
+    if (!await confirmAction({ title: 'Delete catering event?', message: `${event.eventName} will be deleted.`, trigger: button })) return;
     button.disabled = true;
     try {
         await deleteCateringEvent(id);

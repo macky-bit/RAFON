@@ -1,12 +1,6 @@
 <?php declare(strict_types=1); ?>
 <section id="income-statement-view" class="hidden report-view">
     <div class="report-card">
-        <header class="report-heading">
-            <span class="report-eyebrow">Compañero Rafon Resto Grill &amp; Seafoods</span>
-            <h2>Income Statement</h2>
-            <p>All recorded journal entries</p>
-        </header>
-
         <div class="income-report-grid">
             <section class="statement-panel" aria-labelledby="income-revenue-title">
                 <header class="statement-panel-heading">

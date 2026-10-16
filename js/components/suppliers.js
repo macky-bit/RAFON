@@ -1,6 +1,7 @@
 import { loadTemplate } from '../loader.js';
 import { addSupplierTransaction, saveSupplier, setSupplierStatus, suppliers } from '../state.js';
 import { escapeHTML } from '../utils.js';
+import { confirmAction } from '../confirmAction.js';
 
 let lastSupplierTrigger = null;
 
@@ -133,16 +134,12 @@ export function render() {
     directory.innerHTML = visible.map(supplierCard).join('');
 }
 
-function todayStatus(supplier) {
-    return supplier?.status || 'Active';
-}
-
 function openSupplierModal(supplier = null, trigger = null) {
     lastSupplierTrigger = trigger || document.activeElement;
     document.getElementById('supplier-form').reset();
     document.getElementById('supplier-form-error').classList.add('hidden');
     document.getElementById('supplier-id').value = supplier?.id || '';
-    document.getElementById('supplier-record-status').value = todayStatus(supplier);
+    document.getElementById('supplier-record-status').value = supplier?.status || 'Active';
     document.getElementById('supplier-business-name').value = supplier?.businessName || '';
     document.getElementById('supplier-category').value = supplier?.category || '';
     document.getElementById('supplier-contact-person').value = supplier?.contactPerson || '';
@@ -202,6 +199,11 @@ async function handleSupplierSubmit(submitEvent) {
     if (button) button.disabled = true;
     try {
         await saveSupplier(supplier, id);
+        const statusFilter = document.getElementById('supplier-status-filter');
+        if (statusFilter.value && statusFilter.value !== supplier.status) {
+            statusFilter.value = supplier.status;
+            render();
+        }
         closeSupplierModal();
     } catch (requestError) {
         error.textContent = `Could not save the supplier: ${requestError.message}`;
@@ -226,7 +228,7 @@ async function handleDirectoryClick(clickEvent) {
     }
 
     const nextStatus = supplier.status === 'Active' ? 'Inactive' : 'Active';
-    if (nextStatus === 'Inactive' && !window.confirm(`Archive "${supplier.businessName}"? Its record will remain available under Inactive suppliers.`)) return;
+    if (nextStatus === 'Inactive' && !await confirmAction({ title: 'Archive supplier?', message: `${supplier.businessName} will move to Inactive suppliers. You can reactivate it later.`, action: 'Archive', trigger: button })) return;
     button.disabled = true;
     try {
         await setSupplierStatus(supplier.id, nextStatus);

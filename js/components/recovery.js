@@ -2,8 +2,8 @@ import { loadTemplate } from '../loader.js';
 import { loadState, emitChange } from '../state.js';
 import { escapeHTML } from '../utils.js';
 
-const labels = { ingredient: 'Ingredient', event: 'Catering event', journal: 'Journal entry', supplier: 'Supplier' };
-const statuses = { ingredient: 'Deleted', event: 'Deleted', journal: 'Voided', supplier: 'Archived' };
+const labels = { ingredient: 'Ingredient', journal: 'Journal entry' };
+const statuses = { ingredient: 'Deleted', journal: 'Voided' };
 let records = [];
 
 export async function mount(parent) {
@@ -21,16 +21,13 @@ function render() {
     const body = document.getElementById('recovery-table-body');
     const query = document.getElementById('recovery-search').value.trim().toLowerCase();
     const type = document.getElementById('recovery-type').value;
-    const status = document.getElementById('recovery-status').value;
     const visible = records.filter(record =>
         (!query || record.name.toLowerCase().includes(query)) &&
-        (!type || record.type === type) &&
-        (!status || statuses[record.type].toLowerCase() === status)
+        (!type || record.type === type)
     );
     const params = new URLSearchParams({ action: 'download' });
     if (query) params.set('search', query);
     if (type) params.set('type', type);
-    if (status) params.set('status', status);
     document.getElementById('recovery-download').href = `api/recovery.php?${params}`;
     document.getElementById('recovery-count').textContent = `Showing ${visible.length} of ${records.length} recoverable record${records.length === 1 ? '' : 's'}`;
     body.innerHTML = visible.length ? visible.map(record => `<tr>
@@ -39,7 +36,7 @@ function render() {
         <td>${statuses[record.type]}</td>
         <td>${escapeHTML(record.changedAt || '—')}</td>
         <td><button type="button" class="recovery-restore" data-type="${record.type}" data-id="${record.id}" aria-label="Restore ${escapeHTML(record.name)}">Restore</button></td>
-    </tr>`).join('') : `<tr><td colspan="5" class="recovery-empty">${records.length ? 'No records match these filters.' : 'No deleted or archived records to restore.'}</td></tr>`;
+    </tr>`).join('') : `<tr><td colspan="5" class="recovery-empty">${records.length ? 'No records match these filters.' : 'No deleted or voided records to restore.'}</td></tr>`;
 }
 
 export async function refresh() {
@@ -49,7 +46,7 @@ export async function refresh() {
         const response = await fetch('api/recovery.php', { cache: 'no-store' });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || `Request failed (${response.status}).`);
-        records = payload.records || [];
+        records = (payload.records || []).filter(record => Object.hasOwn(labels, record.type));
         render();
     } catch (error) {
         body.innerHTML = '<tr><td colspan="5" class="recovery-empty">Could not load recoverable records.</td></tr>';
@@ -61,7 +58,7 @@ export function bindEvents() {
     document.getElementById('nav-recovery')?.addEventListener('click', refresh);
     document.getElementById('recovery-refresh')?.addEventListener('click', refresh);
     document.getElementById('recovery-search')?.addEventListener('input', render);
-    ['recovery-type', 'recovery-status'].forEach(id => document.getElementById(id)?.addEventListener('change', render));
+    document.getElementById('recovery-type')?.addEventListener('change', render);
     document.getElementById('recovery-table-body')?.addEventListener('click', async event => {
         const button = event.target.closest('.recovery-restore');
         if (!button || button.disabled) return;

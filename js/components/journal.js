@@ -2,6 +2,7 @@
 import { loadTemplate } from '../loader.js';
 import { deleteEntry, journalEntries } from '../state.js';
 import { entryLines, escapeHTML, splitAmount } from '../utils.js';
+import { confirmAction } from '../confirmAction.js';
 
 export async function mount(parent) {
     parent.insertAdjacentHTML('beforeend', await loadTemplate('journal'));
@@ -30,7 +31,7 @@ export function bindEvents({ onNewEntry, onEditEntry }) {
             onEditEntry(entry, button);
             return;
         }
-        if (!window.confirm(`Delete journal entry ${entry.ref}? It will be removed from financial reports.`)) return;
+        if (!await confirmAction({ title: `Delete journal entry ${entry.ref}?`, message: 'Are you sure? This entry will be removed from the General Journal and financial reports. You can restore it from Backup & Recovery.', trigger: button })) return;
         button.disabled = true;
         try {
             await deleteEntry(entry.id);

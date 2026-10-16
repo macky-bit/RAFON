@@ -256,7 +256,11 @@ try {
         await pause(100);
     }
     assert.ok(await evaluate(`(async () => (await import('./js/state.js')).journalEntries.find(entry => entry.id === ${testJournalId})?.explanation === 'Updated UI smoke journal entry')()`), 'Edit updates the journal entry');
-    await evaluate(`window.confirm = () => true; document.querySelector('[data-entry-action="delete"][data-id="${testJournalId}"]').click()`);
+    await evaluate(`document.querySelector('[data-entry-action="delete"][data-id="${testJournalId}"]').click()`);
+    assert.ok(await evaluate(`document.querySelector('#action-confirm-dialog')?.open`), 'Delete opens a confirmation dialog');
+    await evaluate(`document.querySelector('#action-confirm-dialog [data-confirm-choice="cancel"]').click()`);
+    assert.ok(await evaluate(`(async () => (await import('./js/state.js')).journalEntries.some(entry => entry.id === ${testJournalId}))()`), 'Cancel keeps the journal entry');
+    await evaluate(`document.querySelector('[data-entry-action="delete"][data-id="${testJournalId}"]').click(); document.querySelector('#action-confirm-dialog [data-confirm-choice="confirm"]').click()`);
     for (let i = 0; i < 50; i++) {
         if (await evaluate(`(async () => !(await import('./js/state.js')).journalEntries.some(entry => entry.id === ${testJournalId}))()`)) break;
         await pause(100);
@@ -297,6 +301,8 @@ try {
     await evaluate(`document.querySelector('#supplier-search').value=''; document.querySelector('#supplier-search').dispatchEvent(new Event('input', { bubbles: true }))`);
     await evaluate(`document.querySelector('#add-supplier').click()`);
     assert.ok(await evaluate(`document.querySelector('#supplier-modal').open`));
+    assert.deepEqual(await evaluate(`Array.from(document.querySelector('#supplier-record-status').options, option => option.value)`), ['Active', 'Inactive'], 'Supplier form offers Active and Inactive status');
+    assert.equal(await evaluate(`document.querySelector('#supplier-record-status').value`), 'Active', 'New suppliers default to Active');
     assert.equal(await evaluate(`document.activeElement.id`), 'supplier-business-name');
     assert.ok(await evaluate(`Array.from(document.querySelectorAll('#supplier-form input:not([type="hidden"]), #supplier-form textarea')).every(input => input.labels.length)`));
     await call('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
