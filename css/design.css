@@ -3858,15 +3858,6 @@ header,
 	background: #fbf6ed;
 }
 
-.audit-status {
-	background: #e6f4e9;
-	border-radius: 999px;
-	color: #226038;
-	font-size: 0.68rem;
-	font-weight: 800;
-	padding: 0.35rem 0.55rem;
-}
-
 @media (max-width: 760px) {
 	.account-panels { grid-template-columns: 1fr; }
 	.account-identity-card { align-items: flex-start; flex-wrap: wrap; }

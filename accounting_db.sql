@@ -214,15 +214,14 @@ INSERT INTO accounts (code, title, category, normal_balance) VALUES
     ('110', 'Cash on Hand & Bank', 'Asset', 'Debit'),
     ('120', 'Accounts Receivable', 'Asset', 'Debit'),
     ('125', 'Allowance for Bad Debts', 'Asset', 'Credit'),
-    ('130', 'Food & Beverage Inventory', 'Asset', 'Debit'),
-    ('135', 'Notes Receivable', 'Asset', 'Debit'),
-    ('140', 'Prepaid Rent & Insurance', 'Asset', 'Debit'),
+    ('130', 'Notes Receivable', 'Asset', 'Debit'),
+    ('140', 'Food & Beverage Inventory', 'Asset', 'Debit'),
+    ('145', 'Prepaid Rent, Insurance & Supplies', 'Asset', 'Debit'),
     ('150', 'Kitchen Equipment & Appliances', 'Asset', 'Debit'),
     ('155', 'Accumulated Depreciation - Kitchen Equipment & Appliances', 'Asset', 'Credit'),
-    ('160', 'Prepaid Supplies', 'Asset', 'Debit'),
-    ('170', 'Land', 'Asset', 'Debit'),
-    ('180', 'Building', 'Asset', 'Debit'),
-    ('190', 'Accumulated Depreciation - Building', 'Asset', 'Credit'),
+    ('160', 'Land', 'Asset', 'Debit'),
+    ('170', 'Building', 'Asset', 'Debit'),
+    ('175', 'Accumulated Depreciation - Building', 'Asset', 'Credit'),
 
     -- LIABILITIES
     ('210', 'Accounts Payable', 'Liability', 'Credit'),
@@ -230,29 +229,31 @@ INSERT INTO accounts (code, title, category, normal_balance) VALUES
     ('230', 'Notes Payable', 'Liability', 'Credit'),
     ('240', 'Interest Payable', 'Liability', 'Credit'),
     ('250', 'Salaries Payable', 'Liability', 'Credit'),
+    ('260', 'Taxes Payable (VAT / Percentage Tax)', 'Liability', 'Credit'),
+    ('270', 'Unearned Revenue (Customer Deposits)', 'Liability', 'Credit'),
 
     -- EQUITY
     ('310', 'Rafon, Capital', 'Equity', 'Credit'),
     ('320', 'Rafon, Drawing', 'Equity', 'Debit'),
 
-    -- REVENUE AND OTHER INCOME
+    -- REVENUE
     ('410', 'Restaurant & Seafood Sales', 'Revenue', 'Credit'),
     ('420', 'Catering Services Income', 'Revenue', 'Credit'),
-    ('430', 'Rent Income', 'Revenue', 'Credit'),
-    ('440', 'Interest Income', 'Revenue', 'Credit'),
-    ('450', 'Gains', 'Revenue', 'Credit'),
 
-    -- EXPENSES AND LOSSES
+    -- EXPENSES
     ('510', 'Cost of Seafood & Food Ingredients', 'Expense', 'Debit'),
     ('515', 'Freight-Out & Delivery Expense', 'Expense', 'Debit'),
     ('520', 'Salaries & Staff Wages Expense', 'Expense', 'Debit'),
+    ('525', 'Supplies Expense (Disposables & Packaging)', 'Expense', 'Debit'),
     ('530', 'Utilities & Power Expense', 'Expense', 'Debit'),
     ('540', 'Rent Expense', 'Expense', 'Debit'),
     ('545', 'Bad Debt Expense', 'Expense', 'Debit'),
     ('550', 'Advertising Expense', 'Expense', 'Debit'),
     ('560', 'Taxes & Licenses', 'Expense', 'Debit'),
     ('570', 'Interest Expense', 'Expense', 'Debit'),
-    ('580', 'Losses', 'Expense', 'Debit')
+    ('575', 'Depreciation Expense', 'Expense', 'Debit'),
+    ('580', 'Food Spoilage & Wastage Expense', 'Expense', 'Debit'),
+    ('585', 'Repairs & Maintenance Expense', 'Expense', 'Debit')
 ON DUPLICATE KEY UPDATE
     title = VALUES(title),
     category = VALUES(category),

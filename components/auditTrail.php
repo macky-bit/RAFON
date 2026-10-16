@@ -14,7 +14,6 @@
                         <th class="py-3 px-4">User Action</th>
                         <th class="py-3 px-4">Ref Code</th>
                         <th class="py-3 px-4">Details</th>
-                        <th class="py-3 px-4">Status</th>
                     </tr>
                 </thead>
                 <tbody id="audit-trail-body" class="divide-y divide-slate-100">
