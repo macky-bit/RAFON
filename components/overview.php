@@ -26,7 +26,7 @@
                 <div><h2 id="performance-title">Revenue vs. Expenses</h2><p>Monthly performance from posted entries.</p></div>
                 <div class="chart-legend" aria-hidden="true"><span><i class="revenue-dot"></i>Revenue</span><span><i class="expense-dot"></i>Expenses</span></div>
             </div>
-            <div id="performance-chart" class="performance-chart" role="img" aria-label="Revenue and expenses for the last six months"></div>
+            <div id="performance-chart" class="performance-chart" role="group" aria-label="Revenue and expenses for the last six months"></div>
         </section>
 
         <section class="cash-flow-panel" aria-labelledby="cash-flow-title">
@@ -59,7 +59,7 @@
                 </div>
                 <div class="dashboard-table-wrap event-table-wrap">
                     <table class="dashboard-table event-table">
-                        <thead><tr><th>Upcoming Events</th><th>Date</th><th>Status</th><th class="amount-column">Revenue</th><th><span class="sr-only">Actions</span></th></tr></thead>
+                        <thead><tr><th>Upcoming Event</th><th>Date</th><th>Status</th><th class="amount-column">Revenue</th><th>Actions</th></tr></thead>
                         <tbody id="catering-events-table"></tbody>
                     </table>
                 </div>
@@ -72,7 +72,7 @@
                 <div><h2 id="recent-title">Recent Transactions</h2><p>Latest accounting entries across all books.</p></div>
                 <button data-tab="journal" class="panel-link">View all <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
             </div>
-            <div class="dashboard-table-wrap">
+            <div class="dashboard-table-wrap recent-table-wrap">
                 <table class="dashboard-table recent-table">
                     <thead><tr><th>Date</th><th>Description</th><th>Ref</th><th class="amount-column">Debit</th><th class="amount-column">Credit</th></tr></thead>
                     <tbody id="dash-recent-table"></tbody>

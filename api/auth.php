@@ -46,6 +46,78 @@ try {
     }
 
     $pdo = Database::connection();
+
+    if ($action === 'update-profile') {
+        $sessionUser = requireAuthenticatedUser();
+        $fullName = trim((string) ($payload['full_name'] ?? ''));
+        if (mb_strlen($fullName) < 2 || mb_strlen($fullName) > 100) {
+            authRespond(['error' => 'Full name must be between 2 and 100 characters.'], 422);
+        }
+
+        $statement = $pdo->prepare('SELECT full_name, email, status FROM users WHERE id = ? LIMIT 1');
+        $statement->execute([$sessionUser['id']]);
+        $user = $statement->fetch();
+        if (!$user || $user['status'] !== 'Active') {
+            authRespond(['error' => 'This account is no longer active. Sign in again or contact an administrator.'], 403);
+        }
+
+        $pdo->beginTransaction();
+        $pdo->prepare('UPDATE users SET full_name = ? WHERE id = ?')->execute([$fullName, $sessionUser['id']]);
+        $pdo->prepare(
+            "INSERT INTO audit_logs (user_name, action, reference_number, details, status)
+             VALUES (?, 'Updated Profile', ?, ?, 'Success')"
+        )->execute([$fullName, $user['email'], 'Display name updated']);
+        $pdo->commit();
+        $_SESSION['user']['fullName'] = $fullName;
+
+        authRespond(['user' => currentUser(), 'message' => 'Profile updated successfully.']);
+    }
+
+    if ($action === 'change-password') {
+        $sessionUser = requireAuthenticatedUser();
+        $currentPassword = (string) ($payload['current_password'] ?? '');
+        $newPassword = (string) ($payload['new_password'] ?? '');
+        $confirmation = (string) ($payload['password_confirmation'] ?? '');
+        if ($currentPassword === '') {
+            authRespond(['error' => 'Enter your current password.'], 422);
+        }
+        if (strlen($newPassword) < 8 || strlen($newPassword) > 72) {
+            authRespond(['error' => 'New password must be between 8 and 72 characters.'], 422);
+        }
+        if (!hash_equals($newPassword, $confirmation)) {
+            authRespond(['error' => 'New passwords must match.'], 422);
+        }
+        if (hash_equals($currentPassword, $newPassword)) {
+            authRespond(['error' => 'Choose a new password that differs from your current password.'], 422);
+        }
+
+        $statement = $pdo->prepare('SELECT email, password_hash, status FROM users WHERE id = ? LIMIT 1');
+        $statement->execute([$sessionUser['id']]);
+        $user = $statement->fetch();
+        if (!$user || $user['status'] !== 'Active') {
+            authRespond(['error' => 'This account is no longer active. Sign in again or contact an administrator.'], 403);
+        }
+        if (!password_verify($currentPassword, $user['password_hash'])) {
+            authRespond(['error' => 'The current password is incorrect.'], 401);
+        }
+
+        $pdo->beginTransaction();
+        $pdo->prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+            ->execute([password_hash($newPassword, PASSWORD_DEFAULT), $sessionUser['id']]);
+        $pdo->prepare(
+            "INSERT INTO audit_logs (user_name, action, reference_number, details, status)
+             VALUES (?, 'Changed Password', ?, 'Account password changed', 'Success')"
+        )->execute([$sessionUser['fullName'], $user['email']]);
+        $pdo->commit();
+
+        session_regenerate_id(true);
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        authRespond([
+            'message' => 'Password changed successfully.',
+            'csrfToken' => csrfToken(),
+        ]);
+    }
+
     $email = mb_strtolower(trim((string) ($payload['email'] ?? '')));
     $password = (string) ($payload['password'] ?? '');
 
@@ -99,12 +171,14 @@ try {
     $pdo->prepare('UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?')->execute([$user['id']]);
     authRespond(['user' => currentUser(), 'csrfToken' => csrfToken()]);
 } catch (PDOException $exception) {
+    if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
     if ((string) $exception->getCode() === '23000') {
         authRespond(['error' => 'An account already exists for that email address.'], 409);
     }
     error_log($exception->getMessage());
     authRespond(['error' => 'The authentication request could not be completed.'], 500);
 } catch (Throwable $exception) {
+    if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
     error_log($exception->getMessage());
     authRespond(['error' => 'An unexpected authentication error occurred.'], 500);
 }

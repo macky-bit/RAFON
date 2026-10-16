@@ -86,7 +86,7 @@
     </section>
 
     <!-- Catering Sales and Event Revenue -->
-    <section class="dashboard-section" aria-labelledby="catering-performance-title">
+    <section class="dashboard-section catering-panel" aria-labelledby="catering-performance-title">
         <div class="dashboard-section-heading">
             <div>
                 <span class="dashboard-index">03</span>
@@ -102,7 +102,7 @@
         </div>
         <div class="dashboard-table-wrap">
             <table class="dashboard-table">
-                <thead><tr><th>Event</th><th>Date</th><th>Package</th><th>Status</th><th class="amount-column">Revenue</th><th class="amount-column">Profit</th><th><span class="sr-only">Actions</span></th></tr></thead>
+                <thead><tr><th>Upcoming Event</th><th>Date</th><th>Status</th><th class="amount-column">Revenue</th><th>Actions</th></tr></thead>
                 <tbody id="catering-events-table"></tbody>
             </table>
         </div>

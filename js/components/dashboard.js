@@ -79,8 +79,8 @@ function renderPerformanceChart() {
     container.innerHTML = months.map(month => `
         <div class="chart-month">
             <div class="bar-pair">
-                <i class="chart-bar revenue-bar" style="height:${Math.max((month.revenue / maximum) * 100, month.revenue ? 4 : 1)}%" title="${month.label} revenue: ${formatPHP(month.revenue)}"></i>
-                <i class="chart-bar expense-bar" style="height:${Math.max((month.expenses / maximum) * 100, month.expenses ? 4 : 1)}%" title="${month.label} expenses: ${formatPHP(month.expenses)}"></i>
+                <button type="button" class="chart-bar revenue-bar" style="height:${Math.max((month.revenue / maximum) * 100, month.revenue ? 4 : 1)}%" data-tooltip="${month.label} revenue: ${formatPHP(month.revenue)}" aria-label="${month.label} revenue: ${formatPHP(month.revenue)}"></button>
+                <button type="button" class="chart-bar expense-bar" style="height:${Math.max((month.expenses / maximum) * 100, month.expenses ? 4 : 1)}%" data-tooltip="${month.label} expenses: ${formatPHP(month.expenses)}" aria-label="${month.label} expenses: ${formatPHP(month.expenses)}"></button>
             </div>
             <span>${month.label}</span>
         </div>

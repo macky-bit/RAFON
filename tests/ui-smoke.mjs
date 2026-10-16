@@ -13,6 +13,7 @@ const artifacts = mkdtempSync(join(tmpdir(), 'rafon-ui-'));
 const testEmail = `ui-smoke-${Date.now()}@example.test`;
 const testJournalRef = `UI-JOURNAL-${Date.now()}`;
 const testPassword = 'TestPassword123';
+const updatedPassword = 'UpdatedPassword456';
 const mysql = process.env.MYSQL_PATH || 'D:\\xammp\\mysql\\bin\\mysql.exe';
 const browser = spawn(chrome, ['--headless=new', '--no-sandbox', '--disable-gpu',
     '--remote-debugging-port=9224', `--user-data-dir=${join(artifacts, 'profile')}`,
@@ -178,7 +179,29 @@ try {
         }
         if (tab === 'settings') {
             assert.equal(await evaluate(`document.querySelector('#settings-view .account-panels').children.length`), 2);
-            assert.ok(await evaluate(`document.querySelector('#settings-view').textContent.includes('Profile changes and password updates are not available')`));
+            assert.ok(await evaluate(`!!document.querySelector('#profile-settings-form') && !!document.querySelector('#password-settings-form')`), 'Account settings forms are available');
+            assert.ok(await evaluate(`Array.from(document.querySelectorAll('#settings-view input')).every(input => input.labels.length)`), 'Account settings inputs have labels');
+            await evaluate(`document.querySelector('#settings-full-name').value='Updated Test User'; document.querySelector('#profile-settings-form').requestSubmit()`);
+            for (let i = 0; i < 50; i++) {
+                if (await evaluate(`document.querySelector('#profile-settings-status').textContent.includes('successfully')`)) break;
+                await pause(100);
+            }
+            assert.equal(await evaluate(`document.querySelector('#profile-view [data-account-name]').textContent`), 'Updated Test User', 'Profile name updates across the workspace');
+            assert.equal(await evaluate(`document.querySelector('.user-initials').textContent.trim()`), 'UT', 'Profile initials update');
+            await evaluate(`document.querySelector('#settings-current-password').value='wrong-password'; document.querySelector('#settings-new-password').value='${updatedPassword}'; document.querySelector('#settings-password-confirmation').value='${updatedPassword}'; document.querySelector('#password-settings-form').requestSubmit()`);
+            for (let i = 0; i < 50; i++) {
+                if (await evaluate(`document.querySelector('#password-settings-status').classList.contains('is-error')`)) break;
+                await pause(100);
+            }
+            assert.ok(await evaluate(`document.querySelector('#password-settings-status').textContent.includes('incorrect')`), 'Incorrect current password is rejected');
+            await evaluate(`document.querySelector('#settings-show-passwords').click()`);
+            assert.ok(await evaluate(`Array.from(document.querySelectorAll('#password-settings-form input[name]')).every(input => input.type === 'text')`), 'Password visibility control reveals every password field');
+            await evaluate(`document.querySelector('#settings-show-passwords').click(); document.querySelector('#settings-current-password').value='${testPassword}'; document.querySelector('#password-settings-form').requestSubmit()`);
+            for (let i = 0; i < 50; i++) {
+                if (await evaluate(`document.querySelector('#password-settings-status').textContent.includes('successfully')`)) break;
+                await pause(100);
+            }
+            assert.ok(await evaluate(`document.querySelector('#password-settings-status').textContent.includes('successfully')`), 'Password change succeeds');
             writeFileSync(join(artifacts, 'settings-desktop.png'), Buffer.from((await call('Page.captureScreenshot')).data, 'base64'));
             await call('Emulation.setDeviceMetricsOverride', { width: 390, height: 900, deviceScaleFactor: 1, mobile: false });
             assert.ok(await evaluate(`document.documentElement.scrollWidth <= innerWidth + 1`), 'Account settings fit on mobile');
@@ -209,7 +232,7 @@ try {
     await evaluate(`document.querySelector('#post-modal .js-close-modal').click()`);
     await pause(50);
     assert.equal(await evaluate(`document.activeElement.id`), 'new-entry-button', 'Closing the form returns focus to Post Entry');
-    await evaluate(`document.querySelector('#new-entry-button').click(); document.querySelector('#entry-date').value='2026-10-15'; document.querySelector('#entry-ref').value='${testJournalRef}'; document.querySelector('#entry-debit-account').value='101'; document.querySelector('#entry-credit-account').value='201'; document.querySelector('#entry-debit-amount').value='125'; document.querySelector('#entry-credit-amount').value='125'; document.querySelector('#entry-explanation').value='UI smoke journal entry'; document.querySelector('#entry-form').requestSubmit()`);
+    await evaluate(`document.querySelector('#new-entry-button').click(); document.querySelector('#entry-date').value='2026-10-15'; document.querySelector('#entry-ref').value='${testJournalRef}'; document.querySelector('#entry-debit-account').value='110'; document.querySelector('#entry-credit-account').value='210'; document.querySelector('#entry-debit-amount').value='125'; document.querySelector('#entry-credit-amount').value='125'; document.querySelector('#entry-explanation').value='UI smoke journal entry'; document.querySelector('#entry-form').requestSubmit()`);
     let testJournalId;
     for (let i = 0; i < 50; i++) {
         testJournalId = await evaluate(`(async () => (await import('./js/state.js')).journalEntries.find(entry => entry.ref === '${testJournalRef}')?.id)()`);
@@ -285,6 +308,19 @@ try {
     assert.equal(await evaluate(`getComputedStyle(document.querySelector('#dashboard-view .kpi-card')).borderRadius`), '9px');
     assert.ok(await evaluate(`document.querySelector('header').textContent.includes('All recorded entries')`));
     assert.ok(await evaluate(`document.querySelector('#dashboard-view').textContent.includes('Catering & Events')`));
+    assert.equal(await evaluate(`document.querySelectorAll('#performance-chart .chart-bar').length`), 12, 'Performance chart renders revenue and expense bars for six months');
+    assert.ok(await evaluate(`Array.from(document.querySelectorAll('#performance-chart .chart-bar')).every(bar => bar.dataset.tooltip && bar.getAttribute('aria-label') === bar.dataset.tooltip)`), 'Every performance bar exposes its month, series, and value');
+    await evaluate(`document.querySelector('#performance-chart .chart-bar').focus()`);
+    await pause(150);
+    assert.equal(await evaluate(`getComputedStyle(document.querySelector('#performance-chart .chart-bar'), '::after').opacity`), '1', 'Performance value appears when a bar receives keyboard focus');
+    assert.ok(await evaluate(`(() => { const bar = document.querySelector('#performance-chart .revenue-bar'); return getComputedStyle(bar).zIndex === '10' && getComputedStyle(bar.closest('.chart-month')).zIndex === '10' && getComputedStyle(bar.closest('.performance-panel')).zIndex === '20'; })()`), 'Focused performance value is layered above neighboring chart components');
+    assert.notEqual(await evaluate(`getComputedStyle(document.querySelector('.revenue-bar'), '::after').backgroundColor`), await evaluate(`getComputedStyle(document.querySelector('.expense-bar'), '::after').backgroundColor`), 'Revenue and expense tooltips use distinct green and red colors');
+    assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.catering-panel .dashboard-table th'), cell => cell.textContent.trim())`), ['Upcoming Event', 'Date', 'Status', 'Revenue', 'Actions'], 'Catering table has the requested five columns');
+    assert.ok(await evaluate(`(() => { const panel = document.querySelector('.catering-panel').getBoundingClientRect(); const heading = document.querySelector('.catering-panel > .panel-heading').getBoundingClientRect(); const button = document.querySelector('#add-catering-event').getBoundingClientRect(); return heading.top - panel.top <= 25 && button.top - panel.top <= 30; })()`), 'Catering heading and Add Event button stay at the top of the panel');
+    assert.ok(await evaluate(`(() => { const cards = document.querySelector('.catering-panel .catering-stat-grid').getBoundingClientRect(); const table = document.querySelector('.catering-panel .dashboard-table-wrap').getBoundingClientRect(); return cards.bottom <= table.top; })()`), 'Catering cards sit above the event table');
+    assert.ok(await evaluate(`Array.from(document.querySelectorAll('#catering-events-table tr')).every(row => row.cells.length === 5 || row.cells[0]?.colSpan === 5)`), 'Catering event rows align with the five-column header');
+    assert.ok(await evaluate(`(() => { const body = document.querySelector('#catering-events-table'); const original = body.innerHTML; const row = body.querySelector('tr'); if (!row) return false; for (let i = 0; i < 15; i++) body.appendChild(row.cloneNode(true)); const wrapper = document.querySelector('.event-table-wrap'); const scrolls = wrapper.scrollHeight > wrapper.clientHeight && getComputedStyle(wrapper).overflowY === 'auto' && getComputedStyle(document.querySelector('.event-table th')).position === 'sticky'; body.innerHTML = original; return scrolls; })()`), 'Catering event list scrolls with a sticky header when rows exceed its maximum height');
+    assert.ok(await evaluate(`(() => { const body = document.querySelector('#dash-recent-table'); const original = body.innerHTML; const row = body.querySelector('tr'); if (!row) return false; for (let i = 0; i < 15; i++) body.appendChild(row.cloneNode(true)); const wrapper = document.querySelector('.recent-table-wrap'); const scrolls = wrapper.scrollHeight > wrapper.clientHeight && getComputedStyle(wrapper).overflowY === 'auto' && getComputedStyle(document.querySelector('.recent-table th')).position === 'sticky'; body.innerHTML = original; return scrolls; })()`), 'Recent transaction list scrolls with a sticky header when rows exceed its maximum height');
     await evaluate(`document.querySelector('#add-catering-event').click()`);
     assert.ok(await evaluate(`document.querySelector('#catering-event-modal').open`));
     assert.equal(await evaluate(`document.activeElement.id`), 'event-name');
@@ -299,5 +335,6 @@ try {
     socket?.close();
     browser.kill();
     spawnSync(mysql, ['-u', 'root', '--database=accounting_db', '-e', `DELETE FROM journal_lines WHERE journal_entry_id IN (SELECT id FROM journal_entries WHERE reference_number = '${testJournalRef}'); DELETE FROM journal_entries WHERE reference_number = '${testJournalRef}'; DELETE FROM audit_logs WHERE reference_number = '${testJournalRef}';`]);
+    spawnSync(mysql, ['-u', 'root', '--database=accounting_db', '-e', `DELETE FROM audit_logs WHERE reference_number = '${testEmail}';`]);
     spawnSync(mysql, ['-u', 'root', '--database=accounting_db', '-e', `DELETE FROM users WHERE email = '${testEmail}';`]);
 }

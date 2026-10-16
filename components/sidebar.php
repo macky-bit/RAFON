@@ -51,7 +51,7 @@ $initials = mb_strtoupper(implode('', array_map(static fn(string $part): string 
                 </div>
             </div>
 
-            <button type="button" id="nav-audit-trail" data-tab="audit-trail" class="nav-item flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span class="nav-text">Audit Trail</span></button>
+            <button type="button" id="nav-audit-trail" data-tab="audit-trail" class="nav-item flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800"><span class="nav-text">Audit Trail</span></button>
         </div>
     </div>
 

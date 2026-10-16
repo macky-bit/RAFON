@@ -2,7 +2,7 @@
 <section id="audit-trail-view" class="hidden audit-view">
     <div class="audit-card">
         <div class="audit-card-heading">
-            <div class="audit-heading-copy"><span class="audit-heading-icon"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span><div><h2>Activity history</h2><p>Changes to restaurant and accounting records, shown most recent first.</p></div></div>
+            <div class="audit-heading-copy"><div><h2>Activity history</h2><p>Changes to restaurant and accounting records, shown most recent first.</p></div></div>
             <span id="audit-record-count" class="audit-count" aria-live="polite">0 records</span>
         </div>
 

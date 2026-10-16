@@ -210,21 +210,49 @@ CREATE TABLE IF NOT EXISTS ingredients (
   COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO accounts (code, title, category, normal_balance) VALUES
+    -- ASSETS
     ('110', 'Cash on Hand & Bank', 'Asset', 'Debit'),
     ('120', 'Accounts Receivable', 'Asset', 'Debit'),
+    ('125', 'Allowance for Bad Debts', 'Asset', 'Credit'),
     ('130', 'Food & Beverage Inventory', 'Asset', 'Debit'),
+    ('135', 'Notes Receivable', 'Asset', 'Debit'),
     ('140', 'Prepaid Rent & Insurance', 'Asset', 'Debit'),
-    ('151', 'Kitchen Equipment & Appliances', 'Asset', 'Debit'),
+    ('150', 'Kitchen Equipment & Appliances', 'Asset', 'Debit'),
+    ('155', 'Accumulated Depreciation - Kitchen Equipment & Appliances', 'Asset', 'Credit'),
+    ('160', 'Prepaid Supplies', 'Asset', 'Debit'),
+    ('170', 'Land', 'Asset', 'Debit'),
+    ('180', 'Building', 'Asset', 'Debit'),
+    ('190', 'Accumulated Depreciation - Building', 'Asset', 'Credit'),
+
+    -- LIABILITIES
     ('210', 'Accounts Payable', 'Liability', 'Credit'),
     ('220', 'Utilities Payable', 'Liability', 'Credit'),
+    ('230', 'Notes Payable', 'Liability', 'Credit'),
+    ('240', 'Interest Payable', 'Liability', 'Credit'),
+    ('250', 'Salaries Payable', 'Liability', 'Credit'),
+
+    -- EQUITY
     ('310', 'Rafon, Capital', 'Equity', 'Credit'),
     ('320', 'Rafon, Drawing', 'Equity', 'Debit'),
+
+    -- REVENUE AND OTHER INCOME
     ('410', 'Restaurant & Seafood Sales', 'Revenue', 'Credit'),
     ('420', 'Catering Services Income', 'Revenue', 'Credit'),
+    ('430', 'Rent Income', 'Revenue', 'Credit'),
+    ('440', 'Interest Income', 'Revenue', 'Credit'),
+    ('450', 'Gains', 'Revenue', 'Credit'),
+
+    -- EXPENSES AND LOSSES
     ('510', 'Cost of Seafood & Food Ingredients', 'Expense', 'Debit'),
+    ('515', 'Freight-Out & Delivery Expense', 'Expense', 'Debit'),
     ('520', 'Salaries & Staff Wages Expense', 'Expense', 'Debit'),
     ('530', 'Utilities & Power Expense', 'Expense', 'Debit'),
-    ('540', 'Rent Expense', 'Expense', 'Debit')
+    ('540', 'Rent Expense', 'Expense', 'Debit'),
+    ('545', 'Bad Debt Expense', 'Expense', 'Debit'),
+    ('550', 'Advertising Expense', 'Expense', 'Debit'),
+    ('560', 'Taxes & Licenses', 'Expense', 'Debit'),
+    ('570', 'Interest Expense', 'Expense', 'Debit'),
+    ('580', 'Losses', 'Expense', 'Debit')
 ON DUPLICATE KEY UPDATE
     title = VALUES(title),
     category = VALUES(category),

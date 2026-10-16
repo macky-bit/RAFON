@@ -14,6 +14,7 @@ import * as trialBalance from './components/trialBalance.js';
 import * as incomeStatement from './components/incomeStatement.js';
 import * as balanceSheet from './components/balanceSheet.js';
 import * as auditTrail from './components/auditTrail.js';
+import * as account from './components/account.js';
 import * as postModal from './components/postModal.js';
 
 // Refresh all accounting views & data dependencies
@@ -55,6 +56,7 @@ async function init() {
     ingredients.bindEvents();
     journal.bindEvents({ onNewEntry: postModal.openModal, onEditEntry: postModal.openModal });
     ledger.bindEvents();
+    account.bindEvents();
     postModal.bindEvents();
 
     // 3) Re-render whenever state changes (new posting, tab switch)
