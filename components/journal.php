@@ -2,6 +2,10 @@
 <section id="journal-view" class="hidden journal-view">
     <div class="journal-book">
         <div class="journal-toolbar">
+            <label class="journal-search" for="journal-search">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                <input type="search" id="journal-search" placeholder="Search journals" aria-label="Search journals">
+            </label>
             <div class="journal-toolbar-actions">
                 <button type="button" id="new-entry-button" aria-label="Post a new journal entry" class="inline-flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 text-sm shadow-md shadow-emerald-600/20 transition-all hover:shadow-lg">
                     <i class="fa-solid fa-plus text-xs" aria-hidden="true"></i>

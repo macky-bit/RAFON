@@ -12,7 +12,8 @@
                 <div><span class="supplier-form-index">01</span><h3>Transaction details</h3></div>
                 <div class="supplier-form-grid">
                     <div class="supplier-form-field"><label for="entry-date">Transaction date</label><input type="date" id="entry-date" required></div>
-                    <div class="supplier-form-field"><label for="entry-ref">PR reference code</label><input type="text" id="entry-ref" inputmode="numeric" pattern="[0-9]{3}" maxlength="3" placeholder="e.g. 105" title="Enter exactly 3 digits" required></div>
+                    <div class="supplier-form-field"><label for="entry-ref">Transaction reference code</label><input type="text" id="entry-ref" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" placeholder="e.g. 00105" title="Enter exactly 5 digits" required></div>
+                    <div class="supplier-form-field supplier-form-wide"><label for="entry-title">Journal title</label><input type="text" id="entry-title" maxlength="150" placeholder="e.g. Daily seafood purchases" required></div>
                     <div class="supplier-form-field supplier-form-wide"><label for="entry-explanation">Transaction particulars / explanation</label><input type="text" id="entry-explanation" maxlength="500" placeholder="To record daily seafood purchases, sales, etc." required></div>
                 </div>
             </div>

@@ -76,20 +76,38 @@ try {
 
     $payload = json_decode(file_get_contents('php://input') ?: '', true);
     if (!is_array($payload)) respondRecovery(['error' => 'The request body must contain valid JSON.'], 400);
+    $action = (string) ($payload['action'] ?? 'restore');
     $type = (string) ($payload['type'] ?? '');
     $id = filter_var($payload['id'] ?? null, FILTER_VALIDATE_INT);
     $targets = [
         'ingredient' => ['ingredients', 'ingredient_id', 'deleted_at IS NOT NULL', 'deleted_at = NULL', 'INGREDIENT-'],
         'journal' => ['journal_entries', 'id', "status = 'VOID'", "status = 'POSTED'", 'JOURNAL-'],
     ];
-    if (!isset($targets[$type]) || $id === false || $id <= 0) {
-        respondRecovery(['error' => 'Choose a valid record to restore.'], 422);
+    if (!in_array($action, ['restore', 'delete'], true) || !isset($targets[$type]) || $id === false || $id <= 0) {
+        respondRecovery(['error' => 'Choose a valid recovery action and record.'], 422);
     }
 
     [$table, $key, $condition, $change, $referencePrefix] = $targets[$type];
+    if ($action === 'delete' && !validCsrfToken((string) ($payload['csrfToken'] ?? ''))) {
+        respondRecovery(['error' => 'Your session has expired. Refresh the page and try again.'], 403);
+    }
     $pdo->beginTransaction();
-    $statement = $pdo->prepare("UPDATE {$table} SET {$change} WHERE {$key} = ? AND {$condition}");
-    $statement->execute([$id]);
+    if ($action === 'delete') {
+        $statement = $pdo->prepare("SELECT {$key} FROM {$table} WHERE {$key} = ? AND {$condition} FOR UPDATE");
+        $statement->execute([$id]);
+        if (!$statement->fetch()) {
+            $pdo->rollBack();
+            respondRecovery(['error' => 'This record is no longer available for recovery.'], 404);
+        }
+        if ($type === 'journal') {
+            $pdo->prepare('DELETE FROM journal_lines WHERE journal_entry_id = ?')->execute([$id]);
+        }
+        $statement = $pdo->prepare("DELETE FROM {$table} WHERE {$key} = ? AND {$condition}");
+        $statement->execute([$id]);
+    } else {
+        $statement = $pdo->prepare("UPDATE {$table} SET {$change} WHERE {$key} = ? AND {$condition}");
+        $statement->execute([$id]);
+    }
     if ($statement->rowCount() !== 1) {
         $pdo->rollBack();
         respondRecovery(['error' => 'This record is no longer available for recovery.'], 404);
@@ -97,13 +115,13 @@ try {
     $audit = $pdo->prepare('INSERT INTO audit_logs (user_name, action, reference_number, details, status) VALUES (?, ?, ?, ?, ?)');
     $audit->execute([
         currentUser()['fullName'] ?? 'System User',
-        'Restored ' . ucfirst($type),
+        ($action === 'delete' ? 'Permanently Deleted ' : 'Restored ') . ucfirst($type),
         $referencePrefix . $id,
-        'Restored from Backup & Recovery',
+        ($action === 'delete' ? 'Permanently deleted from' : 'Restored from') . ' Backup & Recovery',
         'VERIFIED',
     ]);
     $pdo->commit();
-    respondRecovery(['restored' => ['type' => $type, 'id' => $id]]);
+    respondRecovery([$action === 'delete' ? 'deleted' : 'restored' => ['type' => $type, 'id' => $id]]);
 } catch (PDOException $exception) {
     if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
     error_log($exception->getMessage());

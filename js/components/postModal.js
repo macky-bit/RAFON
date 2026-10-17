@@ -63,12 +63,13 @@ export function openModal(entry = null, trigger = null) {
     document.getElementById('entry-id').value = entry?.id || '';
     document.getElementById('entry-date').value = entry?.date || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     const referenceInput = document.getElementById('entry-ref');
-    const legacyReference = entry && !/^[0-9]{3}$/.test(entry.ref);
+    const legacyReference = entry && !/^[0-9]{5}$/.test(entry.ref);
     referenceInput.dataset.legacyRef = legacyReference ? entry.ref : '';
-    referenceInput.maxLength = legacyReference ? 50 : 3;
+    referenceInput.maxLength = legacyReference ? 50 : 5;
     if (legacyReference) referenceInput.removeAttribute('pattern');
-    else referenceInput.pattern = '[0-9]{3}';
+    else referenceInput.pattern = '[0-9]{5}';
     referenceInput.value = entry?.ref || '';
+    document.getElementById('entry-title').value = entry?.title || '';
     document.getElementById('entry-explanation').value = entry?.explanation || '';
     const lines = entry?.lines || (entry ? [
         { type: 'Debit', accountCode: entry.debitCode, amount: entry.debitAmount },
@@ -93,10 +94,17 @@ async function handlePostEntry(event) {
     const errorMessage = document.getElementById('entry-error');
     errorMessage.classList.add('hidden');
     const referenceInput = document.getElementById('entry-ref');
-    if (!/^[0-9]{3}$/.test(referenceInput.value.trim()) && referenceInput.value.trim() !== referenceInput.dataset.legacyRef) {
-        errorMessage.textContent = 'PR reference code must be exactly 3 digits.';
+    if (!/^[0-9]{5}$/.test(referenceInput.value.trim()) && referenceInput.value.trim() !== referenceInput.dataset.legacyRef) {
+        errorMessage.textContent = 'Transaction reference code must be exactly 5 digits.';
         errorMessage.classList.remove('hidden');
         referenceInput.focus();
+        return;
+    }
+    const titleInput = document.getElementById('entry-title');
+    if (!titleInput.value.trim()) {
+        errorMessage.textContent = 'Enter a journal title.';
+        errorMessage.classList.remove('hidden');
+        titleInput.focus();
         return;
     }
     const lines = ['Debit', 'Credit'].flatMap(type => [...lineContainer(type).querySelectorAll('.entry-line-row')].map(row => ({
@@ -114,6 +122,7 @@ async function handlePostEntry(event) {
     const entry = {
         date: document.getElementById('entry-date').value,
         ref: document.getElementById('entry-ref').value.trim(),
+        title: titleInput.value.trim(),
         explanation: document.getElementById('entry-explanation').value.trim(),
         lines
     };

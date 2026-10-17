@@ -21,6 +21,7 @@ export function bindEvents({ onNewEntry, onEditEntry }) {
         onNewEntry(null, event.currentTarget);
     });
     document.getElementById('print-journal-button').addEventListener('click', () => window.print());
+    document.getElementById('journal-search').addEventListener('input', render);
     document.getElementById('journal-table-body').addEventListener('click', async event => {
         const button = event.target.closest('[data-entry-action]');
         if (!button) return;
@@ -46,31 +47,35 @@ export function bindEvents({ onNewEntry, onEditEntry }) {
 
 export function render() {
     const tbody = document.getElementById('journal-table-body');
+    const query = (document.getElementById('journal-search')?.value || '').trim().toLowerCase();
+    const visibleEntries = journalEntries.filter(entry => !query || [
+        `J${entry.journalNumber}`, entry.title, entry.ref, entry.date, entry.explanation,
+        ...entryLines(entry).flatMap(line => [line.accountTitle, line.accountCode])
+    ].some(value => String(value ?? '').toLowerCase().includes(query)));
     tbody.innerHTML = '';
-    journalEntries.forEach(entry => {
+    visibleEntries.forEach(entry => {
         const lines = entryLines(entry);
         lines.forEach((line, index) => {
             const amount = splitAmount(line.amount);
             const debit = line.type === 'Debit';
             const row = document.createElement('tr');
-            row.className = `hover:bg-slate-50 transition-colors${index === 0 ? ' journal-entry-start' : ''}`;
-            row.innerHTML = `${index === 0 ? `<td class="border border-slate-300 py-2 px-3 text-center text-xs font-medium text-slate-600 align-top" rowspan="${lines.length + 1}">${escapeHTML(entry.date)}</td>` : ''}
+            row.className = `hover:bg-slate-50 transition-colors${index === 0 ? ' journal-entry-start' : ''}${index === lines.length - 1 ? ' journal-entry-end' : ''}`;
+            row.innerHTML = `${index === 0 ? `<td class="journal-date-cell border border-slate-300 py-2 px-3 text-center text-xs font-medium text-slate-600 align-top" rowspan="${lines.length}">
+                    <span>${escapeHTML(entry.date)}</span>
+                    <div class="journal-date-details"><strong>J${escapeHTML(entry.journalNumber)} · ${escapeHTML(entry.title || entry.explanation)}</strong><span>(${escapeHTML(entry.explanation)})</span></div>
+                </td>` : ''}
                 <td class="border border-slate-300 py-2 px-4 ${debit ? 'text-slate-900 font-semibold' : 'pl-10 text-slate-700'} align-top">${escapeHTML(line.accountTitle)}</td>
                 <td class="border border-slate-300 py-2 px-2 text-center text-xs text-slate-500 font-mono align-top">${escapeHTML(line.accountCode)}</td>
                 <td class="border-y border-l border-slate-300 py-2 px-2 text-right mono w-28 align-top">${debit ? amount.pesos : ''}</td>
                 <td class="border-y border-r border-slate-300 py-2 px-1 text-center mono w-8 border-split align-top">${debit ? amount.cents : ''}</td>
                 <td class="border-y border-l border-slate-300 py-2 px-2 text-right mono w-28 align-top">${debit ? '' : amount.pesos}</td>
                 <td class="border-y border-r border-slate-300 py-2 px-1 text-center mono w-8 align-top">${debit ? '' : amount.cents}</td>
-                ${index === 0 ? `<td class="journal-row-actions-cell" rowspan="${lines.length + 1}"><div class="journal-row-actions">
+                ${index === 0 ? `<td class="journal-row-actions-cell" rowspan="${lines.length}"><div class="journal-row-actions">
                     <button type="button" data-entry-action="edit" data-id="${entry.id}" aria-label="Edit journal entry ${escapeHTML(entry.ref)}" title="Edit"><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
                     <button type="button" data-entry-action="delete" data-id="${entry.id}" aria-label="Delete journal entry ${escapeHTML(entry.ref)}" title="Delete"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
                 </div></td>` : ''}`;
             tbody.appendChild(row);
         });
-        const explanation = document.createElement('tr');
-        explanation.className = 'journal-explanation-row border-b-2 border-slate-300 bg-slate-50/30';
-        explanation.innerHTML = `<td class="border border-slate-300 py-1.5 px-6 text-xs text-slate-500 italic" colspan="2">(${escapeHTML(entry.explanation)})</td><td colspan="4" class="border border-slate-300 bg-slate-50/50"></td>`;
-        tbody.appendChild(explanation);
     });
-    if (!tbody.children.length) tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No journal entries yet. Use Post Entry to record a transaction.</td></tr>';
+    if (!tbody.children.length) tbody.innerHTML = `<tr><td colspan="8" class="empty-state">${journalEntries.length ? 'No journal entries match your search.' : 'No journal entries yet. Use Post Entry to record a transaction.'}</td></tr>`;
 }

@@ -53,7 +53,7 @@ function postingsFor(account) {
     const postings = [];
     for (const entry of journalEntries) {
         entryLines(entry).forEach((line, order) => {
-            if (String(line.accountCode) === String(account.code)) postings.push({ entry, order, side: line.type.toLowerCase(), amount: Number(line.amount), particular: entry.explanation || entry.ref });
+            if (String(line.accountCode) === String(account.code)) postings.push({ entry, order, side: line.type.toLowerCase(), amount: Number(line.amount), particular: entry.title || entry.explanation || entry.ref });
         });
     }
     return postings.sort((a, b) => a.entry.date.localeCompare(b.entry.date) || a.entry.id - b.entry.id || a.order - b.order);
@@ -67,7 +67,7 @@ function accountTable(account, postings) {
         return `<tr>
             <td>${escapeHTML(displayDate(posting.entry.date))}</td>
             <td>${escapeHTML(posting.particular)}</td>
-            <td class="mono">${escapeHTML(posting.entry.ref)}</td>
+            <td class="mono">J${escapeHTML(posting.entry.journalNumber)}</td>
             <td class="mono amount">${posting.side === 'debit' ? money(posting.amount) : ''}</td>
             <td class="mono amount">${posting.side === 'credit' ? money(posting.amount) : ''}</td>
             <td class="mono amount ledger-balance">${money(Math.abs(balance))} <span>${balanceSide}</span></td>
@@ -77,7 +77,7 @@ function accountTable(account, postings) {
     const endingSide = balance === 0 ? '—' : (balance > 0 ? 'Dr' : 'Cr');
     return `<article class="ledger-sheet">
         <div class="ledger-sheet-scroll"><table class="ledger-table">
-            <caption><span>Amounts in Philippine Pesos</span><strong>GENERAL LEDGER</strong></caption>
+            <caption><span>Amounts in Philippine Pesos</span><strong>${escapeHTML(account.title)}</strong></caption>
             <thead>
                 <tr class="ledger-account-heading"><th colspan="6">Account Name: ${escapeHTML(account.title)}</th><th>No. ${escapeHTML(account.code)}</th></tr>
                 <tr><th>Date</th><th>Particulars</th><th>PR</th><th>Debit</th><th>Credit</th><th>Balance</th><th class="ledger-actions-heading">Actions</th></tr>

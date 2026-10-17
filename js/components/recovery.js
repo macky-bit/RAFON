@@ -1,6 +1,7 @@
 import { loadTemplate } from '../loader.js';
 import { loadState, emitChange } from '../state.js';
 import { escapeHTML } from '../utils.js';
+import { confirmAction } from '../confirmAction.js';
 
 const labels = { ingredient: 'Ingredient', journal: 'Journal entry' };
 const statuses = { ingredient: 'Deleted', journal: 'Voided' };
@@ -35,8 +36,8 @@ function render() {
         <td>${labels[record.type]}</td>
         <td>${statuses[record.type]}</td>
         <td>${escapeHTML(record.changedAt || '—')}</td>
-        <td><button type="button" class="recovery-restore" data-type="${record.type}" data-id="${record.id}" aria-label="Restore ${escapeHTML(record.name)}">Restore</button></td>
-    </tr>`).join('') : `<tr><td colspan="5" class="recovery-empty">${records.length ? 'No records match these filters.' : 'No deleted or voided records to restore.'}</td></tr>`;
+        <td><div class="recovery-row-actions"><button type="button" class="recovery-restore" data-type="${record.type}" data-id="${record.id}" aria-label="Restore ${escapeHTML(record.name)}">Restore</button><button type="button" class="recovery-delete" data-type="${record.type}" data-id="${record.id}" aria-label="Permanently delete ${escapeHTML(record.name)}">Permanently delete</button></div></td>
+    </tr>`).join('') : `<tr><td colspan="5" class="recovery-empty">${records.length ? 'No records match these filters.' : 'No deleted or voided records.'}</td></tr>`;
 }
 
 export async function refresh() {
@@ -60,32 +61,45 @@ export function bindEvents() {
     document.getElementById('recovery-search')?.addEventListener('input', render);
     document.getElementById('recovery-type')?.addEventListener('change', render);
     document.getElementById('recovery-table-body')?.addEventListener('click', async event => {
-        const button = event.target.closest('.recovery-restore');
+        const button = event.target.closest('.recovery-restore, .recovery-delete');
         if (!button || button.disabled) return;
         const record = records.find(item => item.type === button.dataset.type && item.id === Number(button.dataset.id));
-        if (!record || !window.confirm(`Restore ${labels[record.type].toLowerCase()} "${record.name}"?`)) return;
-        button.disabled = true;
+        if (!record) return;
+        const deleting = button.classList.contains('recovery-delete');
+        const description = `${labels[record.type].toLowerCase()} "${record.name}"`;
+        const confirmed = deleting
+            ? await confirmAction({
+                title: `Permanently delete ${description}?`,
+                message: 'This cannot be undone. The record will also be removed from future recovery backups.',
+                action: 'Permanently delete',
+                trigger: button
+            })
+            : window.confirm(`Restore ${description}?`);
+        if (!confirmed) return;
+        const rowButtons = button.closest('tr').querySelectorAll('button');
+        rowButtons.forEach(action => { action.disabled = true; });
         try {
             const response = await fetch('api/recovery.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: record.type, id: record.id })
+                body: JSON.stringify({ action: deleting ? 'delete' : 'restore', type: record.type, id: record.id,
+                    csrfToken: document.querySelector('meta[name="csrf-token"]')?.content || '' })
             });
             const payload = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(payload.error || `Request failed (${response.status}).`);
             records = records.filter(item => item !== record);
             render();
-            showFeedback(`${labels[record.type]} "${record.name}" restored.`);
+            showFeedback(`${labels[record.type]} "${record.name}" ${deleting ? 'permanently deleted' : 'restored'}.`);
         } catch (error) {
-            button.disabled = false;
-            showFeedback(`Could not restore the record: ${error.message}`, true);
+            rowButtons.forEach(action => { action.disabled = false; });
+            showFeedback(`Could not ${deleting ? 'permanently delete' : 'restore'} the record: ${error.message}`, true);
             return;
         }
         try {
             await loadState();
             emitChange();
         } catch (error) {
-            showFeedback(`Record restored. Refresh the page to update the other views: ${error.message}`, true);
+            showFeedback(`Record ${deleting ? 'permanently deleted' : 'restored'}. Refresh the page to update the other views: ${error.message}`, true);
         }
     });
 }

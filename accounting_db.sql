@@ -61,16 +61,26 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 CREATE TABLE IF NOT EXISTS journal_entries (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    journal_number BIGINT UNSIGNED NOT NULL,
     entry_date DATE NOT NULL,
     reference_number VARCHAR(50) NOT NULL,
+    title VARCHAR(150) NOT NULL,
     explanation VARCHAR(500) NOT NULL,
     status ENUM('POSTED', 'VOID') NOT NULL DEFAULT 'POSTED',
     created_by VARCHAR(100) NOT NULL DEFAULT 'Senior Accountant',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_journal_entries_reference UNIQUE (reference_number),
+    CONSTRAINT uq_journal_entries_number UNIQUE (journal_number),
     INDEX idx_journal_entries_date (entry_date),
     INDEX idx_journal_entries_status (status)
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS journal_number_counter (
+    id TINYINT UNSIGNED PRIMARY KEY,
+    next_number BIGINT UNSIGNED NOT NULL
+) ENGINE=InnoDB;
+INSERT INTO journal_number_counter (id, next_number) VALUES (1, 1)
+    ON DUPLICATE KEY UPDATE id = id;
 
 CREATE TABLE IF NOT EXISTS journal_lines (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

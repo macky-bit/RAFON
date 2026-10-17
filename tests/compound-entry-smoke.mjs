@@ -33,7 +33,7 @@ chartOfAccounts.push(
     { code: '503', title: 'Utilities', category: 'Expense', normal: 'Debit' }
 );
 journalEntries.push({
-    id: 1, date: '2026-10-16', ref: 'COMPOUND-1', explanation: 'Sale with expense and payable',
+    id: 43, journalNumber: 1, date: '2026-10-16', ref: 'COMPOUND-1', title: 'Compound sale', explanation: 'Sale with expense and payable',
     lines: [
         { type: 'Debit', accountCode: '101', accountTitle: 'Cash', amount: 100 },
         { type: 'Debit', accountCode: '503', accountTitle: 'Utilities', amount: 25 },
@@ -43,8 +43,9 @@ journalEntries.push({
 });
 
 renderJournal();
-assert.equal(elements.get('journal-table-body').children.length, 5, 'Journal renders four lines and explanation');
-assert.match(elements.get('journal-table-body').children[0].innerHTML, /rowspan="5"/);
+assert.equal(elements.get('journal-table-body').children.length, 4, 'Journal renders four posting lines');
+assert.match(elements.get('journal-table-body').children[0].innerHTML, /rowspan="4"/);
+assert.match(elements.get('journal-table-body').children[0].innerHTML, /J1 · Compound sale/, 'Journal shows its number and title below the date');
 renderTrialBalance();
 assert.equal(elements.get('trial-balance-body').children.length, 4, 'Trial balance includes all four accounts');
 assert.equal(elements.get('tb-total-debit').innerText, elements.get('tb-total-credit').innerText);

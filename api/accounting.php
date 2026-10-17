@@ -36,20 +36,23 @@ function validatedTransaction(array $payload, PDO $pdo, ?int $existingId = null)
 {
     $date = trim((string) ($payload['date'] ?? ''));
     $reference = trim((string) ($payload['ref'] ?? ''));
+    $title = trim((string) ($payload['title'] ?? ''));
     $explanation = trim((string) ($payload['explanation'] ?? ''));
     $lines = $payload['lines'] ?? null;
 
     if (!validDate($date)) respond(['error' => 'A valid transaction date is required.'], 422);
     if ($reference === '' || strlen($reference) > 50) respond(['error' => 'The reference is required and must not exceed 50 characters.'], 422);
-    if (!preg_match('/^[0-9]{3}$/D', $reference)) {
+    if (!preg_match('/^[0-9]{5}$/D', $reference)) {
         $existingReference = null;
         if ($existingId !== null) {
             $referenceStatement = $pdo->prepare("SELECT reference_number FROM journal_entries WHERE id = ? AND status = 'POSTED'");
             $referenceStatement->execute([$existingId]);
             $existingReference = $referenceStatement->fetchColumn();
         }
-        if ($existingReference !== $reference) respond(['error' => 'PR reference code must be exactly 3 digits.'], 422);
+        if ($existingReference !== $reference) respond(['error' => 'Transaction reference code must be exactly 5 digits.'], 422);
     }
+    if ($title === '') respond(['error' => 'Enter a journal title.'], 422);
+    if (mb_strlen($title) > 150) respond(['error' => 'Journal title must be 150 characters or fewer.'], 422);
     if ($explanation === '' || strlen($explanation) > 500) respond(['error' => 'The explanation is required and must not exceed 500 characters.'], 422);
     if (!is_array($lines) || count($lines) < 2 || count($lines) > 30) {
         respond(['error' => 'Add at least one debit and one credit line (30 lines maximum).'], 422);
@@ -84,10 +87,10 @@ function validatedTransaction(array $payload, PDO $pdo, ?int $existingId = null)
         respond(['error' => 'One or more selected accounts do not exist or are inactive.'], 422);
     }
 
-    return compact('date', 'reference', 'explanation', 'lines', 'accounts');
+    return compact('date', 'reference', 'title', 'explanation', 'lines', 'accounts');
 }
 
-function transactionRecord(int $id, array $data): array
+function transactionRecord(int $id, int $journalNumber, array $data): array
 {
     $lines = array_map(static function (array $line) use ($data): array {
         return [
@@ -99,7 +102,8 @@ function transactionRecord(int $id, array $data): array
     $debits = array_values(array_filter($lines, static fn(array $line): bool => $line['type'] === 'Debit'));
     $credits = array_values(array_filter($lines, static fn(array $line): bool => $line['type'] === 'Credit'));
     return [
-        'id' => $id, 'date' => $data['date'], 'ref' => $data['reference'],
+        'id' => $id, 'journalNumber' => $journalNumber,
+        'date' => $data['date'], 'ref' => $data['reference'], 'title' => $data['title'],
         'lines' => $lines,
         'debitAcc' => $debits[0]['accountTitle'], 'debitCode' => $debits[0]['accountCode'],
         'debitAmount' => array_sum(array_column($debits, 'amount')),
@@ -132,13 +136,14 @@ function loadAccountingData(PDO $pdo): array
     )->fetchAll();
 
     $entries = $pdo->query(
-        "SELECT id, DATE_FORMAT(entry_date, '%Y-%m-%d') AS date,
-                reference_number AS ref, explanation
+        "SELECT id, journal_number AS journalNumber, DATE_FORMAT(entry_date, '%Y-%m-%d') AS date,
+                reference_number AS ref, title, explanation
          FROM journal_entries WHERE status = 'POSTED' ORDER BY entry_date, id"
     )->fetchAll();
     $entryIndex = [];
     foreach ($entries as &$entry) {
         $entry['id'] = (int) $entry['id'];
+        $entry['journalNumber'] = (int) $entry['journalNumber'];
         $entry['lines'] = [];
         $entry['debitAmount'] = 0.0;
         $entry['creditAmount'] = 0.0;
@@ -224,21 +229,26 @@ try {
 
     $pdo->beginTransaction();
     if ($method === 'POST') {
+        $counter = $pdo->query('SELECT next_number FROM journal_number_counter WHERE id = 1 FOR UPDATE');
+        $journalNumber = (int) $counter->fetchColumn();
+        if ($journalNumber <= 0) throw new RuntimeException('Journal numbering is not initialized.');
+        $pdo->prepare('UPDATE journal_number_counter SET next_number = next_number + 1 WHERE id = 1')->execute();
         $statement = $pdo->prepare(
-            'INSERT INTO journal_entries (entry_date, reference_number, explanation, created_by) VALUES (?, ?, ?, ?)'
+            'INSERT INTO journal_entries (journal_number, entry_date, reference_number, title, explanation, created_by) VALUES (?, ?, ?, ?, ?, ?)'
         );
-        $statement->execute([$data['date'], $data['reference'], $data['explanation'], currentUser()['fullName'] ?? 'System User']);
+        $statement->execute([$journalNumber, $data['date'], $data['reference'], $data['title'], $data['explanation'], currentUser()['fullName'] ?? 'System User']);
         $id = (int) $pdo->lastInsertId();
     } else {
-        $statement = $pdo->prepare('SELECT status FROM journal_entries WHERE id = ? FOR UPDATE');
+        $statement = $pdo->prepare('SELECT status, journal_number FROM journal_entries WHERE id = ? FOR UPDATE');
         $statement->execute([$id]);
         $existing = $statement->fetch();
         if (!$existing || $existing['status'] !== 'POSTED') {
             $pdo->rollBack();
             respond(['error' => 'This journal entry is no longer available.'], 404);
         }
-        $pdo->prepare('UPDATE journal_entries SET entry_date = ?, reference_number = ?, explanation = ? WHERE id = ?')
-            ->execute([$data['date'], $data['reference'], $data['explanation'], $id]);
+        $journalNumber = (int) $existing['journal_number'];
+        $pdo->prepare('UPDATE journal_entries SET entry_date = ?, reference_number = ?, title = ?, explanation = ? WHERE id = ?')
+            ->execute([$data['date'], $data['reference'], $data['title'], $data['explanation'], $id]);
     }
 
     $lineStatement = $pdo->prepare(
@@ -253,7 +263,7 @@ try {
     $pdo->commit();
 
     respond([
-        'entry' => transactionRecord($id, $data),
+        'entry' => transactionRecord($id, $journalNumber, $data),
         'auditLog' => $auditLog,
     ], $method === 'POST' ? 201 : 200);
 } catch (PDOException $exception) {
