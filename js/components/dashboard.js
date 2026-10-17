@@ -122,8 +122,13 @@ function eventStatusClass(status) {
     return `event-status event-status-${String(status).toLowerCase()}`;
 }
 
+export function effectiveEventStatus(event, today = todayValue()) {
+    return event.status === 'Upcoming' && event.eventDate < today ? 'Completed' : event.status;
+}
+
 function renderCateringEvents() {
-    const activeEvents = cateringEvents.filter(event => event.status !== 'Cancelled');
+    const displayedEvents = cateringEvents.map(event => ({ ...event, status: effectiveEventStatus(event) }));
+    const activeEvents = displayedEvents.filter(event => event.status !== 'Cancelled');
     const now = new Date();
     const thisMonth = activeEvents.filter(event => {
         const date = new Date(`${event.eventDate}T00:00:00`);
@@ -146,12 +151,12 @@ function renderCateringEvents() {
     document.getElementById('event-top-package').textContent = topPackage ? topPackage[0] : 'No data yet';
 
     const table = document.getElementById('catering-events-table');
-    if (!cateringEvents.length) {
+    if (!displayedEvents.length) {
         table.innerHTML = '<tr><td colspan="5" class="dashboard-empty-state">No events yet. Add your first catering booking.</td></tr>';
         return;
     }
 
-    table.innerHTML = cateringEvents.map(event => {
+    table.innerHTML = displayedEvents.map(event => {
         return `<tr>
             <td><strong>${escapeHTML(event.eventName)}</strong><small>${escapeHTML(event.clientName)} · ${escapeHTML(event.packageName)}</small></td>
             <td>${escapeHTML(event.eventDate)}</td>
@@ -195,8 +200,20 @@ export function render() {
 }
 
 function todayValue() {
-    const date = new Date();
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(new Date());
+    const date = Object.fromEntries(parts.map(part => [part.type, part.value]));
+    return `${date.year}-${date.month}-${date.day}`;
+}
+
+function refreshEventsAtMidnight() {
+    const [year, month, day] = todayValue().split('-').map(Number);
+    const nextMidnight = Date.UTC(year, month - 1, day + 1) - 8 * 60 * 60 * 1000;
+    setTimeout(() => {
+        renderCateringEvents();
+        refreshEventsAtMidnight();
+    }, Math.max(1000, nextMidnight - Date.now()));
 }
 
 function openEventModal(event = null) {
@@ -207,7 +224,7 @@ function openEventModal(event = null) {
     document.getElementById('event-client').value = event?.clientName || '';
     document.getElementById('event-package').value = event?.packageName || '';
     document.getElementById('event-date').value = event?.eventDate || todayValue();
-    document.getElementById('event-status').value = event?.status || 'Upcoming';
+    document.getElementById('event-status').value = event ? effectiveEventStatus(event) : 'Upcoming';
     document.getElementById('event-revenue').value = event?.totalRevenue ?? 0;
     document.getElementById('event-cost').value = event?.estimatedCost ?? 0;
     document.getElementById('event-paid').value = event?.amountPaid ?? 0;
@@ -271,7 +288,27 @@ async function handleEventTableClick(clickEvent) {
 }
 
 export function bindEvents() {
+    refreshEventsAtMidnight();
+    const faqToggle = document.getElementById('dashboard-faq-toggle');
+    const faqPanel = document.getElementById('dashboard-faq-panel');
+    const closeFaq = () => {
+        faqPanel.hidden = true;
+        faqToggle.setAttribute('aria-expanded', 'false');
+        faqToggle.focus();
+    };
+    faqToggle.addEventListener('click', () => {
+        faqPanel.hidden = !faqPanel.hidden;
+        faqToggle.setAttribute('aria-expanded', String(!faqPanel.hidden));
+    });
+    document.getElementById('dashboard-faq-close').addEventListener('click', closeFaq);
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !faqPanel.hidden) closeFaq();
+    });
     document.getElementById('add-catering-event').addEventListener('click', () => openEventModal());
+    document.getElementById('event-date').addEventListener('change', event => {
+        const status = document.getElementById('event-status');
+        if (status.value === 'Upcoming' && event.target.value < todayValue()) status.value = 'Completed';
+    });
     document.querySelectorAll('.js-close-event-modal').forEach(button => button.addEventListener('click', closeEventModal));
     document.getElementById('catering-event-form').addEventListener('submit', handleEventSubmit);
     document.getElementById('catering-events-table').addEventListener('click', handleEventTableClick);

@@ -81,6 +81,22 @@
         </section>
     </div>
 
+    <div class="dashboard-faq">
+        <section id="dashboard-faq-panel" class="dashboard-faq-panel" aria-labelledby="dashboard-faq-title" hidden>
+            <div class="dashboard-faq-heading">
+                <h2 id="dashboard-faq-title">Dashboard FAQ</h2>
+                <button type="button" id="dashboard-faq-close" aria-label="Close dashboard FAQ"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+            <div class="dashboard-faq-questions">
+                <details><summary>Where do the financial totals come from?</summary><p>They are calculated from posted General Journal entries. The dashboard updates when entries are added, edited, or removed.</p></details>
+                <details><summary>How is net profit calculated?</summary><p>Net profit is recorded revenue minus recorded expenses.</p></details>
+                <details><summary>What is the upcoming balance?</summary><p>It is the unpaid amount for catering events still marked Upcoming. Past events automatically become Completed.</p></details>
+                <details><summary>Where can I review transactions?</summary><p>Open Accounting, then General Journal, to see all posted entries.</p></details>
+            </div>
+        </section>
+        <button type="button" id="dashboard-faq-toggle" class="dashboard-faq-toggle" aria-controls="dashboard-faq-panel" aria-expanded="false"><i class="fa-regular fa-circle-question" aria-hidden="true"></i><span>FAQ</span></button>
+    </div>
+
     <dialog id="catering-event-modal" aria-labelledby="catering-event-modal-title">
         <div class="event-modal-card">
             <div class="event-modal-header"><div><span class="eyebrow">Event record</span><h2 id="catering-event-modal-title">Add catering event</h2></div><button type="button" class="js-close-event-modal" aria-label="Close catering event form"><i class="fa-solid fa-xmark"></i></button></div>

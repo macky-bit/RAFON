@@ -32,6 +32,11 @@ function validDate(string $date): bool
     return $parsed !== false && $parsed->format('Y-m-d') === $date;
 }
 
+function currentEventDate(): string
+{
+    return (new DateTimeImmutable('now', new DateTimeZone('Asia/Manila')))->format('Y-m-d');
+}
+
 function cleanText(array $payload, string $key, string $label, int $maxLength, bool $required = true): string
 {
     $value = trim((string) ($payload[$key] ?? ''));
@@ -82,6 +87,9 @@ function validatedEvent(array $payload): array
     if (!in_array($status, ['Upcoming', 'Completed', 'Cancelled'], true)) {
         respond(['error' => 'Choose a valid event status.'], 422);
     }
+    if ($status === 'Upcoming' && $eventDate < currentEventDate()) {
+        $status = 'Completed';
+    }
 
     $totalRevenue = round((float) ($payload['totalRevenue'] ?? 0), 2);
     $estimatedCost = round((float) ($payload['estimatedCost'] ?? 0), 2);
@@ -108,6 +116,9 @@ try {
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
     if ($method === 'GET') {
+        $pdo->prepare("UPDATE catering_events SET status = 'Completed'
+            WHERE status = 'Upcoming' AND event_date < ? AND deleted_at IS NULL")
+            ->execute([currentEventDate()]);
         $rows = $pdo->query('SELECT * FROM catering_events WHERE deleted_at IS NULL ORDER BY event_date DESC, id DESC')->fetchAll();
         respond(['events' => array_map('eventRecord', $rows)]);
     }

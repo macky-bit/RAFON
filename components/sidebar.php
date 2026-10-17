@@ -56,8 +56,10 @@ $initials = mb_strtoupper(implode('', array_map(static fn(string $part): string 
     </div>
 
     <div class="user-status nav-group relative ml-auto">
-        <button type="button" class="user-initials nav-dropdown-toggle bg-slate-700 rounded-full w-10 h-10 flex items-center justify-center" aria-label="Open profile menu for <?= htmlspecialchars($sidebarUser['fullName'], ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars($sidebarUser['fullName'], ENT_QUOTES, 'UTF-8') ?>" aria-expanded="false" aria-controls="profile-submenu">
-            <?= htmlspecialchars($initials, ENT_QUOTES, 'UTF-8') ?>
+        <button type="button" class="user-initials nav-dropdown-toggle profile-trigger" aria-label="Open profile menu for <?= htmlspecialchars($sidebarUser['fullName'], ENT_QUOTES, 'UTF-8') ?>" title="<?= htmlspecialchars($sidebarUser['fullName'], ENT_QUOTES, 'UTF-8') ?>" aria-expanded="false" aria-controls="profile-submenu">
+            <span class="profile-avatar" data-account-initials aria-hidden="true"><?= htmlspecialchars($initials, ENT_QUOTES, 'UTF-8') ?></span>
+            <span class="profile-name" data-account-name><?= htmlspecialchars($sidebarUser['fullName'], ENT_QUOTES, 'UTF-8') ?></span>
+            <i class="fa-solid fa-chevron-down profile-chevron" aria-hidden="true"></i>
         </button>
         <div id="profile-submenu" class="nav-submenu pl-6 space-y-1 hidden" inert>
             <button type="button" id="nav-profile" data-tab="profile" class="nav-item w-full text-left px-3 py-2 text-xs hover:text-white"><span class="nav-text">My Profile</span></button>

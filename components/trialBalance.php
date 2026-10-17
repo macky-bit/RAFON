@@ -5,6 +5,9 @@
             <table class="report-table trial-balance-table">
                 <thead>
                     <tr>
+                        <th colspan="4" class="trial-balance-title">CAMPAÑERO RAFON</th>
+                    </tr>
+                    <tr>
                         <th class="report-code-column">Account Code</th>
                         <th>Account Title</th>
                         <th class="report-amount-column">Debit (₱)</th>
@@ -22,9 +25,12 @@
             </table>
         </div>
 
-        <div id="tb-balance-status" class="report-status" role="status">
-            <i class="fa-solid fa-check" aria-hidden="true"></i>
-            <span><strong id="tb-account-count">0 accounts</strong> · Debits and credits are balanced.</span>
+        <div class="trial-balance-footer">
+            <div id="tb-balance-status" class="report-status" role="status">
+                <i class="fa-solid fa-check" aria-hidden="true"></i>
+                <span><strong id="tb-account-count">0 accounts</strong> · Debits and credits are balanced.</span>
+            </div>
+            <p class="trial-balance-date">Current date: <time id="tb-current-date"></time></p>
         </div>
     </div>
 </section>

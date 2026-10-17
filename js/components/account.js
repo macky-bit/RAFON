@@ -43,7 +43,6 @@ export function bindEvents() {
             document.querySelectorAll('[data-account-name]').forEach(element => { element.textContent = result.user.fullName; });
             document.querySelectorAll('[data-account-initials]').forEach(element => { element.textContent = initialsFor(result.user.fullName); });
             const profileButton = document.querySelector('.user-initials');
-            profileButton.textContent = initialsFor(result.user.fullName);
             profileButton.title = result.user.fullName;
             profileButton.setAttribute('aria-label', `Open profile menu for ${result.user.fullName}`);
             showStatus(status, result.message);

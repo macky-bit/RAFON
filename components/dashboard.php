@@ -102,7 +102,7 @@
         </div>
         <div class="dashboard-table-wrap">
             <table class="dashboard-table">
-                <thead><tr><th>Upcoming Event</th><th>Date</th><th>Status</th><th class="amount-column">Revenue</th><th>Actions</th></tr></thead>
+                <thead><tr><th>Event</th><th>Date</th><th>Status</th><th class="amount-column">Revenue</th><th>Actions</th></tr></thead>
                 <tbody id="catering-events-table"></tbody>
             </table>
         </div>

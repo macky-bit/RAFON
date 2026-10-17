@@ -10,6 +10,9 @@ export async function mount(parent) {
 export function render() {
     const tbody = document.getElementById('trial-balance-body');
     tbody.innerHTML = '';
+    document.getElementById('tb-current-date').textContent = new Intl.DateTimeFormat('en-PH', {
+        day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Manila'
+    }).format(new Date());
 
     let grandTotalDebit = 0;
     let grandTotalCredit = 0;

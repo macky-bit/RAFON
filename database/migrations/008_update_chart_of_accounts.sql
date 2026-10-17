@@ -5,7 +5,7 @@ CREATE TEMPORARY TABLE desired_accounts (
     title VARCHAR(150) NOT NULL UNIQUE,
     category ENUM('Asset', 'Liability', 'Equity', 'Revenue', 'Expense') NOT NULL,
     normal_balance ENUM('Debit', 'Credit') NOT NULL
-);
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO desired_accounts (code, title, category, normal_balance) VALUES
     ('110', 'Cash on Hand & Bank', 'Asset', 'Debit'),
@@ -49,9 +49,15 @@ UPDATE accounts a
 INNER JOIN desired_accounts d ON d.code = a.code
 SET a.code = CONCAT('legacy-', a.id), a.is_active = FALSE;
 
-UPDATE accounts
-SET title = 'Prepaid Rent, Insurance & Supplies'
-WHERE title = 'Prepaid Rent & Insurance';
+-- Reuse the old account only when the replacement title does not already exist.
+-- Otherwise the old account is retired below, avoiding a duplicate-title error.
+UPDATE accounts a
+LEFT JOIN accounts replacement
+    ON replacement.title = 'Prepaid Rent, Insurance & Supplies'
+    AND replacement.id <> a.id
+SET a.title = 'Prepaid Rent, Insurance & Supplies'
+WHERE a.title = 'Prepaid Rent & Insurance'
+  AND replacement.id IS NULL;
 
 -- Preserve existing account IDs and their journal-line relationships.
 UPDATE accounts a

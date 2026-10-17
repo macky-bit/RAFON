@@ -77,7 +77,7 @@ function accountTable(account, postings) {
     const endingSide = balance === 0 ? '—' : (balance > 0 ? 'Dr' : 'Cr');
     return `<article class="ledger-sheet">
         <div class="ledger-sheet-scroll"><table class="ledger-table">
-            <caption><span>Amounts in Philippine Pesos</span><strong>${escapeHTML(account.title)}</strong></caption>
+            <caption><span>Amounts in Philippine Pesos</span></caption>
             <thead>
                 <tr class="ledger-account-heading"><th colspan="6">Account Name: ${escapeHTML(account.title)}</th><th>No. ${escapeHTML(account.code)}</th></tr>
                 <tr><th>Date</th><th>Particulars</th><th>PR</th><th>Debit</th><th>Credit</th><th>Balance</th><th class="ledger-actions-heading">Actions</th></tr>
