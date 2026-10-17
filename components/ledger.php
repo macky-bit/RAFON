@@ -4,6 +4,10 @@
         <div class="flex items-center justify-end pb-4 border-b border-slate-200">
             <!-- Filter drop down for ledger accounts -->
             <div class="flex items-center space-x-3">
+                <label for="ledger-year-filter" class="text-xs font-medium text-slate-600">Year:</label>
+                <select id="ledger-year-filter" class="bg-slate-50 border border-slate-300 text-slate-800 rounded-lg text-xs py-2 px-3 focus:ring-emerald-500 focus:border-emerald-500">
+                    <option value="ALL">All years</option>
+                </select>
                 <label for="ledger-filter" class="text-xs font-medium text-slate-600">Select Account:</label>
                 <select id="ledger-filter" class="bg-slate-50 border border-slate-300 text-slate-800 rounded-lg text-xs py-2 px-3 focus:ring-emerald-500 focus:border-emerald-500">
                     <option value="ALL">All Ledger Accounts</option>

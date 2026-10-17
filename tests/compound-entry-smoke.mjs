@@ -43,9 +43,9 @@ journalEntries.push({
 });
 
 renderJournal();
-assert.equal(elements.get('journal-table-body').children.length, 4, 'Journal renders four posting lines');
-assert.match(elements.get('journal-table-body').children[0].innerHTML, /rowspan="4"/);
-assert.match(elements.get('journal-table-body').children[0].innerHTML, /J1 · Compound sale/, 'Journal shows its number and title below the date');
+assert.equal((elements.get('journal-years-container').innerHTML.match(/<tr class="hover:bg-slate-50/g) || []).length, 4, 'Journal renders four posting lines');
+assert.match(elements.get('journal-years-container').innerHTML, /rowspan="4"/);
+assert.match(elements.get('journal-years-container').innerHTML, /J1 · Compound sale/, 'Journal shows its number and title below the date');
 renderTrialBalance();
 assert.equal(elements.get('trial-balance-body').children.length, 4, 'Trial balance includes all four accounts');
 assert.equal(elements.get('tb-total-debit').innerText, elements.get('tb-total-credit').innerText);
@@ -79,6 +79,8 @@ journalEntries.push({
         { type: 'Credit', accountCode: '230', amount: 30 }
     ]
 });
+renderJournal();
+assert.match(elements.get('journal-years-container').innerHTML, /J1 · Mixed accounts/, 'A second 2026 entry still uses J1');
 renderBalanceSheet();
 assert.match(elements.get('bs-table-head').innerHTML, /Other Assets/);
 assert.match(elements.get('bs-table-head').innerHTML, /Other Liabilities/);
@@ -86,4 +88,13 @@ assert.match(elements.get('bs-transactions').innerHTML, /\+₱10\.00/);
 assert.match(elements.get('bs-transactions').innerHTML, /\+20\.00/);
 assert.match(elements.get('bs-table-foot').innerHTML, /id="bs-summary-assets">₱130\.00/);
 assert.match(elements.get('bs-table-foot').innerHTML, /id="bs-total-liab-equity">₱130\.00/);
+// Journal book labels advance once per calendar year, regardless of entry count.
+journalEntries.push({ id: 45, journalNumber: 3, date: '2027-01-01', ref: 'NEXT-YEAR', title: 'New year', explanation: 'New year', debitCode: '101', debitAcc: 'Cash', debitAmount: 10, creditCode: '201', creditAcc: 'Payable', creditAmount: 10 });
+renderJournal();
+assert.match(elements.get('journal-years-container').innerHTML, /J2 · New year/, 'A 2027 entry uses J2');
+assert.equal((elements.get('journal-years-container').innerHTML.match(/<table class="journal-table">/g) || []).length, 2, 'Each year has its own journal table');
+elements.get('journal-year-filter').value = '2027';
+renderJournal();
+assert.equal((elements.get('journal-years-container').innerHTML.match(/<table class="journal-table">/g) || []).length, 1, 'Year filter shows one table');
+assert.ok(!elements.get('journal-years-container').innerHTML.includes('Compound sale'), 'Year filter hides other years');
 console.log('Compound journal and report checks passed.');

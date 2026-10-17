@@ -162,7 +162,6 @@
                     <div class="event-form-field"><label for="event-client">Client name</label><input id="event-client" maxlength="150" required></div>
                     <div class="event-form-field"><label for="event-package">Package name</label><input id="event-package" maxlength="120" required placeholder="e.g. Premium buffet"></div>
                     <div class="event-form-field"><label for="event-date">Event date</label><input type="date" id="event-date" required></div>
-                    <div class="event-form-field"><label for="event-status">Status</label><select id="event-status"><option>Upcoming</option><option>Completed</option><option>Cancelled</option></select></div>
                     <div class="event-form-field"><label for="event-revenue">Agreed revenue (PHP)</label><input type="number" id="event-revenue" min="0" step="0.01" required value="0"></div>
                     <div class="event-form-field"><label for="event-cost">Estimated cost (PHP)</label><input type="number" id="event-cost" min="0" step="0.01" required value="0"></div>
                     <div class="event-form-field"><label for="event-paid">Amount paid (PHP)</label><input type="number" id="event-paid" min="0" step="0.01" required value="0"></div>

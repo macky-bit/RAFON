@@ -90,7 +90,7 @@ function validatedTransaction(array $payload, PDO $pdo, ?int $existingId = null)
     return compact('date', 'reference', 'title', 'explanation', 'lines', 'accounts');
 }
 
-function transactionRecord(int $id, int $journalNumber, array $data): array
+function transactionRecord(int $id, array $data): array
 {
     $lines = array_map(static function (array $line) use ($data): array {
         return [
@@ -102,7 +102,7 @@ function transactionRecord(int $id, int $journalNumber, array $data): array
     $debits = array_values(array_filter($lines, static fn(array $line): bool => $line['type'] === 'Debit'));
     $credits = array_values(array_filter($lines, static fn(array $line): bool => $line['type'] === 'Credit'));
     return [
-        'id' => $id, 'journalNumber' => $journalNumber,
+        'id' => $id, 'journalNumber' => max(1, (int) substr($data['date'], 0, 4) - 2025),
         'date' => $data['date'], 'ref' => $data['reference'], 'title' => $data['title'],
         'lines' => $lines,
         'debitAcc' => $debits[0]['accountTitle'], 'debitCode' => $debits[0]['accountCode'],
@@ -143,7 +143,7 @@ function loadAccountingData(PDO $pdo): array
     $entryIndex = [];
     foreach ($entries as &$entry) {
         $entry['id'] = (int) $entry['id'];
-        $entry['journalNumber'] = (int) $entry['journalNumber'];
+        $entry['journalNumber'] = max(1, (int) substr($entry['date'], 0, 4) - 2025);
         $entry['lines'] = [];
         $entry['debitAmount'] = 0.0;
         $entry['creditAmount'] = 0.0;
@@ -263,7 +263,7 @@ try {
     $pdo->commit();
 
     respond([
-        'entry' => transactionRecord($id, $journalNumber, $data),
+        'entry' => transactionRecord($id, $data),
         'auditLog' => $auditLog,
     ], $method === 'POST' ? 201 : 200);
 } catch (PDOException $exception) {

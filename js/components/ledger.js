@@ -1,7 +1,7 @@
 /* General Ledger: chronological postings with a running balance. */
 import { loadTemplate } from '../loader.js';
 import { chartOfAccounts, deleteEntry, journalEntries } from '../state.js';
-import { entryLines, escapeHTML } from '../utils.js';
+import { entryLines, escapeHTML, journalNumberForDate, populateYearFilter } from '../utils.js';
 import { confirmAction } from '../confirmAction.js';
 
 const money = amount => Number(amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -21,10 +21,12 @@ export function populateFilter() {
         `<option value="${escapeHTML(account.code)}">${escapeHTML(account.code)} - ${escapeHTML(account.title)}</option>`
     ).join('');
     if ([...filter.options].some(option => option.value === selected)) filter.value = selected;
+    populateYearFilter(document.getElementById('ledger-year-filter'), journalEntries);
 }
 
 export function bindEvents() {
     document.getElementById('ledger-filter').addEventListener('change', render);
+    document.getElementById('ledger-year-filter').addEventListener('change', render);
     document.getElementById('ledger-accounts-container').addEventListener('click', async event => {
         const button = event.target.closest('[data-ledger-action="delete"]');
         if (!button) return;
@@ -59,7 +61,7 @@ function postingsFor(account) {
     return postings.sort((a, b) => a.entry.date.localeCompare(b.entry.date) || a.entry.id - b.entry.id || a.order - b.order);
 }
 
-function accountTable(account, postings) {
+function accountTable(account, postings, year) {
     let balance = 0;
     const rows = postings.map(posting => {
         balance += (posting.side === 'debit' ? 1 : -1) * posting.amount;
@@ -67,7 +69,7 @@ function accountTable(account, postings) {
         return `<tr>
             <td>${escapeHTML(displayDate(posting.entry.date))}</td>
             <td>${escapeHTML(posting.particular)}</td>
-            <td class="mono">J${escapeHTML(posting.entry.journalNumber)}</td>
+            <td class="mono">J${journalNumberForDate(posting.entry.date)}</td>
             <td class="mono amount">${posting.side === 'debit' ? money(posting.amount) : ''}</td>
             <td class="mono amount">${posting.side === 'credit' ? money(posting.amount) : ''}</td>
             <td class="mono amount ledger-balance">${money(Math.abs(balance))} <span>${balanceSide}</span></td>
@@ -77,9 +79,9 @@ function accountTable(account, postings) {
     const endingSide = balance === 0 ? '—' : (balance > 0 ? 'Dr' : 'Cr');
     return `<article class="ledger-sheet">
         <div class="ledger-sheet-scroll"><table class="ledger-table">
-            <caption><span>Amounts in Philippine Pesos</span></caption>
+            <caption><span>J${journalNumberForDate(`${year}-01-01`)} · ${year} · Amounts in Philippine Pesos</span></caption>
             <thead>
-                <tr class="ledger-account-heading"><th colspan="6">Account Name: ${escapeHTML(account.title)}</th><th>No. ${escapeHTML(account.code)}</th></tr>
+                <tr class="ledger-account-heading"><th colspan="6">${escapeHTML(account.title)}</th><th>No. ${escapeHTML(account.code)}</th></tr>
                 <tr><th>Date</th><th>Particulars</th><th>PR</th><th>Debit</th><th>Credit</th><th>Balance</th><th class="ledger-actions-heading">Actions</th></tr>
             </thead>
             <tbody>${rows || '<tr><td colspan="7" class="ledger-empty">No postings for this account.</td></tr>'}</tbody>
@@ -92,10 +94,22 @@ export function render() {
     const container = document.getElementById('ledger-accounts-container');
     if (!container) return;
     const filter = document.getElementById('ledger-filter').value;
+    const yearFilter = document.getElementById('ledger-year-filter');
+    populateYearFilter(yearFilter, journalEntries);
+    const selectedYear = yearFilter.value;
     const sheets = chartOfAccounts
         .filter(account => filter === 'ALL' || account.code === filter)
-        .map(account => ({ account, postings: postingsFor(account) }))
+        .map(account => ({ account, postings: postingsFor(account).filter(posting => selectedYear === 'ALL' || posting.entry.date.startsWith(`${selectedYear}-`)) }))
         .filter(({ postings }) => filter !== 'ALL' || postings.length)
-        .map(({ account, postings }) => accountTable(account, postings));
+        .flatMap(({ account, postings }) => {
+            const byYear = new Map();
+            postings.forEach(posting => {
+                const year = posting.entry.date.slice(0, 4);
+                if (!byYear.has(year)) byYear.set(year, []);
+                byYear.get(year).push(posting);
+            });
+            if (!postings.length) return selectedYear === 'ALL' ? [] : [accountTable(account, [], selectedYear)];
+            return [...byYear].map(([year, yearlyPostings]) => accountTable(account, yearlyPostings, year));
+        });
     container.innerHTML = sheets.join('') || '<p class="empty-state">No postings for these accounts yet. Open General Journal to get started.</p>';
 }

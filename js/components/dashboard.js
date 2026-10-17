@@ -123,7 +123,7 @@ function eventStatusClass(status) {
 }
 
 export function effectiveEventStatus(event, today = todayValue()) {
-    return event.status === 'Upcoming' && event.eventDate < today ? 'Completed' : event.status;
+    return event.status === 'Cancelled' ? 'Cancelled' : event.eventDate < today ? 'Completed' : 'Upcoming';
 }
 
 function renderCateringEvents() {
@@ -224,7 +224,6 @@ function openEventModal(event = null) {
     document.getElementById('event-client').value = event?.clientName || '';
     document.getElementById('event-package').value = event?.packageName || '';
     document.getElementById('event-date').value = event?.eventDate || todayValue();
-    document.getElementById('event-status').value = event ? effectiveEventStatus(event) : 'Upcoming';
     document.getElementById('event-revenue').value = event?.totalRevenue ?? 0;
     document.getElementById('event-cost').value = event?.estimatedCost ?? 0;
     document.getElementById('event-paid').value = event?.amountPaid ?? 0;
@@ -248,7 +247,6 @@ async function handleEventSubmit(submitEvent) {
         clientName: document.getElementById('event-client').value,
         packageName: document.getElementById('event-package').value,
         eventDate: document.getElementById('event-date').value,
-        status: document.getElementById('event-status').value,
         totalRevenue: Number(document.getElementById('event-revenue').value),
         estimatedCost: Number(document.getElementById('event-cost').value),
         amountPaid: Number(document.getElementById('event-paid').value),
@@ -305,10 +303,6 @@ export function bindEvents() {
         if (event.key === 'Escape' && !faqPanel.hidden) closeFaq();
     });
     document.getElementById('add-catering-event').addEventListener('click', () => openEventModal());
-    document.getElementById('event-date').addEventListener('change', event => {
-        const status = document.getElementById('event-status');
-        if (status.value === 'Upcoming' && event.target.value < todayValue()) status.value = 'Completed';
-    });
     document.querySelectorAll('.js-close-event-modal').forEach(button => button.addEventListener('click', closeEventModal));
     document.getElementById('catering-event-form').addEventListener('submit', handleEventSubmit);
     document.getElementById('catering-events-table').addEventListener('click', handleEventTableClick);

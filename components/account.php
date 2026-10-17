@@ -25,14 +25,14 @@ $accountInitials = htmlspecialchars(mb_strtoupper(implode('', array_map(static f
 
     <div class="account-panels">
         <article class="account-panel">
-            <div class="account-panel-heading"><span class="account-panel-icon"><i class="fa-regular fa-id-card" aria-hidden="true"></i></span><div><h3>Personal details</h3><p>Information connected to your account.</p></div></div>
+            <div class="account-panel-heading"><div><h3>Personal details</h3><p>Information connected to your account.</p></div></div>
             <dl class="account-details">
                 <div><dt>Full name</dt><dd data-account-name><?= $accountName ?></dd></div>
                 <div><dt>Email address</dt><dd><?= $accountEmail ?></dd></div>
             </dl>
         </article>
         <article class="account-panel">
-            <div class="account-panel-heading"><span class="account-panel-icon"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i></span><div><h3>Workspace access</h3><p>Your current access to Compañero Rafon.</p></div></div>
+            <div class="account-panel-heading"><div><h3>Workspace access</h3><p>Your current access to Compañero Rafon.</p></div></div>
             <dl class="account-details">
                 <div><dt>Role</dt><dd><?= $accountRole ?></dd></div>
                 <div><dt>Session</dt><dd><span class="account-session-badge">Signed in</span></dd></div>
@@ -45,7 +45,7 @@ $accountInitials = htmlspecialchars(mb_strtoupper(implode('', array_map(static f
 <section id="settings-view" class="hidden account-view">
     <div class="account-panels">
         <article class="account-panel">
-            <div class="account-panel-heading"><span class="account-panel-icon"><i class="fa-regular fa-user" aria-hidden="true"></i></span><div><h3>Profile details</h3><p>Update the name shown across this workspace.</p></div></div>
+            <div class="account-panel-heading"><div><h3>Profile details</h3><p>Update the name shown across this workspace.</p></div></div>
             <form id="profile-settings-form" class="account-settings-form">
                 <p id="profile-settings-status" class="account-form-status hidden" role="status" aria-live="polite" tabindex="-1"></p>
                 <label class="account-form-field" for="settings-full-name">
@@ -65,7 +65,7 @@ $accountInitials = htmlspecialchars(mb_strtoupper(implode('', array_map(static f
             <button type="button" class="account-link-button" data-tab="profile">View my profile <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
         </article>
         <article class="account-panel">
-            <div class="account-panel-heading"><span class="account-panel-icon"><i class="fa-solid fa-lock" aria-hidden="true"></i></span><div><h3>Sign-in &amp; security</h3><p>Keep your account access secure.</p></div></div>
+            <div class="account-panel-heading"><div><h3>Sign-in &amp; security</h3><p>Keep your account access secure.</p></div></div>
             <form id="password-settings-form" class="account-settings-form">
                 <p id="password-settings-status" class="account-form-status hidden" role="status" aria-live="polite" tabindex="-1"></p>
                 <label class="account-form-field" for="settings-current-password">

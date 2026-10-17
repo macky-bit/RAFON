@@ -76,20 +76,14 @@ function findEvent(PDO $pdo, int $id): array
     return eventRecord($event);
 }
 
-function validatedEvent(array $payload): array
+function validatedEvent(array $payload, ?string $existingStatus = null): array
 {
     $eventDate = trim((string) ($payload['eventDate'] ?? ''));
     if (!validDate($eventDate)) {
         respond(['error' => 'A valid event date is required.'], 422);
     }
 
-    $status = trim((string) ($payload['status'] ?? 'Upcoming'));
-    if (!in_array($status, ['Upcoming', 'Completed', 'Cancelled'], true)) {
-        respond(['error' => 'Choose a valid event status.'], 422);
-    }
-    if ($status === 'Upcoming' && $eventDate < currentEventDate()) {
-        $status = 'Completed';
-    }
+    $status = $existingStatus === 'Cancelled' ? 'Cancelled' : ($eventDate < currentEventDate() ? 'Completed' : 'Upcoming');
 
     $totalRevenue = round((float) ($payload['totalRevenue'] ?? 0), 2);
     $estimatedCost = round((float) ($payload['estimatedCost'] ?? 0), 2);
@@ -116,9 +110,12 @@ try {
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
     if ($method === 'GET') {
-        $pdo->prepare("UPDATE catering_events SET status = 'Completed'
-            WHERE status = 'Upcoming' AND event_date < ? AND deleted_at IS NULL")
-            ->execute([currentEventDate()]);
+        $pdo->prepare("UPDATE catering_events
+            SET status = CASE WHEN event_date < ? THEN 'Completed' ELSE 'Upcoming' END
+            WHERE deleted_at IS NULL AND status <> 'Cancelled'
+              AND ((event_date < ? AND status <> 'Completed')
+                OR (event_date >= ? AND status <> 'Upcoming'))")
+            ->execute(array_fill(0, 3, currentEventDate()));
         $rows = $pdo->query('SELECT * FROM catering_events WHERE deleted_at IS NULL ORDER BY event_date DESC, id DESC')->fetchAll();
         respond(['events' => array_map('eventRecord', $rows)]);
     }
@@ -147,10 +144,10 @@ try {
     if ($id <= 0) {
         respond(['error' => 'A valid catering event ID is required.'], 422);
     }
-    findEvent($pdo, $id);
+    $existingEvent = findEvent($pdo, $id);
 
     if ($method === 'PUT') {
-        $values = validatedEvent($payload);
+        $values = validatedEvent($payload, $existingEvent['status']);
         $pdo->beginTransaction();
         $statement = $pdo->prepare(
             'UPDATE catering_events SET event_name = ?, client_name = ?, package_name = ?, event_date = ?,
