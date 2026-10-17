@@ -15,16 +15,6 @@ function stockStatus(item) {
     return 'In stock';
 }
 
-function ingredientIcon(category) {
-    const value = String(category).toLowerCase();
-    if (value.includes('seafood')) return 'fa-shrimp';
-    if (value.includes('produce')) return 'fa-carrot';
-    if (value.includes('meat')) return 'fa-drumstick-bite';
-    if (value.includes('grain')) return 'fa-bowl-rice';
-    if (value.includes('dairy')) return 'fa-cheese';
-    return 'fa-bottle-droplet';
-}
-
 function visibleIngredients() {
     const query = document.getElementById('ingredient-search')?.value.trim().toLowerCase() || '';
     const category = document.getElementById('ingredient-category-filter')?.value || '';
@@ -58,10 +48,10 @@ function rowTemplate(item) {
     const status = stockStatus(item);
     const statusClass = status.toLowerCase().replaceAll(' ', '-');
     const visual = item.imagePath
-        ? `<img src="${escapeHTML(item.imagePath)}" alt="">`
-        : `<i class="fa-solid ${ingredientIcon(item.category)}" aria-hidden="true"></i>`;
+        ? `<span class="ingredient-icon"><img src="${escapeHTML(item.imagePath)}" alt=""></span>`
+        : '';
     return `<tr>
-        <td><span class="ingredient-identity"><span class="ingredient-icon">${visual}</span><strong>${escapeHTML(item.name)}</strong></span></td>
+        <td><span class="ingredient-identity">${visual}<strong>${escapeHTML(item.name)}</strong></span></td>
         <td>${escapeHTML(item.category)}</td>
         <td>${escapeHTML(item.supplierName || 'No supplier')}</td>
         <td class="mono">${escapeHTML(String(item.stock))} ${escapeHTML(item.unit)}</td>
