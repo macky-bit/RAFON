@@ -1,0 +1,215 @@
+/* Shared database-backed state + tiny change-notification bus. */
+
+export const chartOfAccounts = [];
+export const journalEntries = [];
+export const auditLogs = [];
+export const cateringEvents = [];
+export const suppliers = [];
+export const ingredients = [];
+
+const listeners = [];
+
+export function onChange(fn) {
+    listeners.push(fn);
+}
+
+export function emitChange() {
+    listeners.forEach(fn => fn());
+}
+
+async function apiRequest(url, options = {}) {
+    const response = await fetch(url, {
+        headers: { 'Content-Type': 'application/json' },
+        ...options
+    });
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        throw new Error(payload.error || `Database request failed (${response.status}).`);
+    }
+
+    return payload;
+}
+
+export async function loadState() {
+    const accountingData = await apiRequest('api/accounting.php');
+    chartOfAccounts.splice(0, chartOfAccounts.length, ...(accountingData.chartOfAccounts || []));
+    journalEntries.splice(0, journalEntries.length, ...(accountingData.journalEntries || []));
+    auditLogs.splice(0, auditLogs.length, ...(accountingData.auditLogs || []));
+
+    try {
+        const cateringData = await apiRequest('api/catering_events.php');
+        cateringEvents.splice(0, cateringEvents.length, ...(cateringData.events || []));
+    } catch (error) {
+        console.warn('Catering events are unavailable until the new SQL schema is run.', error);
+        cateringEvents.splice(0, cateringEvents.length);
+    }
+
+    try {
+        const supplierData = await apiRequest('api/suppliers.php');
+        suppliers.splice(0, suppliers.length, ...(supplierData.suppliers || []));
+    } catch (error) {
+        console.warn('Suppliers are unavailable until the new SQL schema is run.', error);
+        suppliers.splice(0, suppliers.length);
+    }
+
+    try {
+        const ingredientData = await apiRequest('api/ingredients.php');
+        ingredients.splice(0, ingredients.length, ...(ingredientData.ingredients || []));
+    } catch (error) {
+        console.warn('Ingredients are unavailable until migration 005 is run.', error);
+        ingredients.splice(0, ingredients.length);
+    }
+}
+
+export async function postEntry(entry) {
+    const result = await apiRequest('api/accounting.php', {
+        method: 'POST',
+        body: JSON.stringify(entry)
+    });
+
+    journalEntries.push(result.entry);
+    journalEntries.sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id);
+    auditLogs.push(result.auditLog);
+    emitChange();
+    return result.entry;
+}
+
+export async function updateEntry(id, entry) {
+    const result = await apiRequest('api/accounting.php', {
+        method: 'PUT',
+        body: JSON.stringify({ ...entry, id })
+    });
+    const index = journalEntries.findIndex(item => item.id === id);
+    if (index >= 0) journalEntries.splice(index, 1, result.entry);
+    journalEntries.sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id);
+    auditLogs.push(result.auditLog);
+    emitChange();
+    return result.entry;
+}
+
+export async function deleteEntry(id) {
+    const result = await apiRequest('api/accounting.php', {
+        method: 'DELETE',
+        body: JSON.stringify({ id })
+    });
+    const index = journalEntries.findIndex(item => item.id === id);
+    if (index >= 0) journalEntries.splice(index, 1);
+    auditLogs.push(result.auditLog);
+    emitChange();
+}
+
+export async function saveCateringEvent(event, id = null) {
+    const result = await apiRequest('api/catering_events.php', {
+        method: id ? 'PUT' : 'POST',
+        body: JSON.stringify(id ? { ...event, id } : event)
+    });
+
+    if (id) {
+        const index = cateringEvents.findIndex(item => item.id === id);
+        if (index >= 0) {
+            cateringEvents.splice(index, 1, result.event);
+        }
+    } else {
+        cateringEvents.unshift(result.event);
+    }
+    emitChange();
+    return result.event;
+}
+
+export async function deleteCateringEvent(id) {
+    await apiRequest('api/catering_events.php', {
+        method: 'DELETE',
+        body: JSON.stringify({ id })
+    });
+    const index = cateringEvents.findIndex(item => item.id === id);
+    if (index >= 0) {
+        cateringEvents.splice(index, 1);
+    }
+    emitChange();
+}
+
+export async function saveSupplier(supplier, id = null) {
+    const result = await apiRequest('api/suppliers.php', {
+        method: id ? 'PUT' : 'POST',
+        body: JSON.stringify(id ? { ...supplier, id } : supplier)
+    });
+
+    if (id) {
+        const index = suppliers.findIndex(item => item.id === id);
+        if (index >= 0) {
+            suppliers.splice(index, 1, result.supplier);
+        }
+    } else {
+        suppliers.unshift(result.supplier);
+    }
+    emitChange();
+    return result.supplier;
+}
+
+export async function setSupplierStatus(id, status) {
+    const result = await apiRequest('api/suppliers.php', {
+        method: 'PATCH',
+        body: JSON.stringify({ id, status })
+    });
+    const index = suppliers.findIndex(item => item.id === id);
+    if (index >= 0) {
+        suppliers.splice(index, 1, result.supplier);
+    }
+    emitChange();
+    return result.supplier;
+}
+
+export async function addSupplierTransaction(id, transaction, receipt) {
+    const form = new FormData();
+    form.append('supplierId', String(id));
+    form.append('transactionId', transaction.transactionId);
+    form.append('title', transaction.title);
+    form.append('description', transaction.description);
+    form.append('receipt', receipt);
+    const response = await fetch('api/suppliers.php?action=transaction', { method: 'POST', body: form });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `Transaction upload failed (${response.status}).`);
+    const index = suppliers.findIndex(item => item.id === id);
+    if (index >= 0) suppliers.splice(index, 1, payload.supplier);
+    emitChange();
+    return payload.supplier;
+}
+
+export async function saveIngredient(ingredient, id = null) {
+    const result = await apiRequest('api/ingredients.php', {
+        method: id ? 'PUT' : 'POST',
+        body: JSON.stringify(id ? { ...ingredient, id } : ingredient)
+    });
+    if (id) {
+        const index = ingredients.findIndex(item => item.id === id);
+        if (index >= 0) ingredients.splice(index, 1, result.ingredient);
+    } else {
+        ingredients.unshift(result.ingredient);
+    }
+    emitChange();
+    return result.ingredient;
+}
+
+export async function deleteIngredient(id) {
+    await apiRequest('api/ingredients.php', {
+        method: 'DELETE',
+        body: JSON.stringify({ id })
+    });
+    const index = ingredients.findIndex(item => item.id === id);
+    if (index >= 0) ingredients.splice(index, 1);
+    emitChange();
+}
+
+export async function uploadIngredientImage(id, file) {
+    const form = new FormData();
+    form.append('id', String(id));
+    form.append('image', file);
+    const response = await fetch('api/ingredients.php?action=image', { method: 'POST', body: form });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `Image upload failed (${response.status}).`);
+    const index = ingredients.findIndex(item => item.id === id);
+    if (index >= 0) ingredients.splice(index, 1, payload.ingredient);
+    emitChange();
+    return payload.ingredient;
+}

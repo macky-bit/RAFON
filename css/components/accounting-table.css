@@ -1,0 +1,6 @@
+/* Shared by General Journal and Trial Balance */
+
+/* Accounting split column borders */
+.border-split {
+    border-right: 1px dashed #cbd5e1;
+}

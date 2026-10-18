@@ -1,0 +1,34 @@
+/* Layout: collapsible sidebar + print rules */
+
+/* Sidebar transition styles */
+.sidebar-expanded {
+    width: 260px;
+}
+.sidebar-collapsed {
+    width: 80px;
+}
+.sidebar-collapsed .nav-text,
+.sidebar-collapsed .nav-header,
+.sidebar-collapsed .logo-text {
+    display: none;
+}
+.sidebar-collapsed .nav-item {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/* Print formatting rules */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    .sidebar-expanded, .sidebar-collapsed {
+        display: none !important;
+    }
+    main {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+}
