@@ -69,7 +69,8 @@ export function openModal(entry = null, trigger = null) {
     if (legacyReference) referenceInput.removeAttribute('pattern');
     else referenceInput.pattern = '[0-9]{5}';
     referenceInput.value = entry?.ref || '';
-    document.getElementById('entry-title').value = entry?.title || entry?.explanation || '';
+    document.getElementById('entry-title').value = entry?.title || '';
+    document.getElementById('entry-explanation').value = entry?.explanation || '';
     const lines = entry?.lines || (entry ? [
         { type: 'Debit', accountCode: entry.debitCode, amount: entry.debitAmount },
         { type: 'Credit', accountCode: entry.creditCode, amount: entry.creditAmount }
@@ -101,7 +102,7 @@ async function handlePostEntry(event) {
     }
     const titleInput = document.getElementById('entry-title');
     if (!titleInput.value.trim()) {
-        errorMessage.textContent = 'Enter transaction particulars.';
+        errorMessage.textContent = 'Enter a journal title.';
         errorMessage.classList.remove('hidden');
         titleInput.focus();
         return;
@@ -122,7 +123,7 @@ async function handlePostEntry(event) {
         date: document.getElementById('entry-date').value,
         ref: document.getElementById('entry-ref').value.trim(),
         title: titleInput.value.trim(),
-        explanation: `To record ${titleInput.value.trim()}`,
+        explanation: document.getElementById('entry-explanation').value.trim(),
         lines
     };
     const id = Number(document.getElementById('entry-id').value) || null;

@@ -228,7 +228,7 @@ try {
     await evaluate(`document.querySelector('[aria-controls="accounting-submenu"]').click(); document.querySelector('#nav-journal').click(); document.querySelector('#new-entry-button').click()`);
     assert.equal(await evaluate(`document.querySelector('#post-modal').open`), true, 'Journal Post Entry opens the transaction form');
     assert.ok(await evaluate(`document.querySelector('#post-modal .supplier-modal-card .supplier-form-section') !== null`), 'Journal form uses supplier card sections');
-    assert.ok(await evaluate(`(() => { const ref = document.querySelector('#entry-ref'); const title = document.querySelector('#entry-title'); const amount = document.querySelector('#entry-debit-lines .entry-line-amount'); return ref.maxLength === 5 && ref.pattern === '[0-9]{5}' && title.required && !document.querySelector('#entry-explanation') && amount.step === '1' && amount.min === '1'; })()`), 'New entries require one particulars field, five-digit reference, and whole-peso amount steps');
+    assert.ok(await evaluate(`(() => { const ref = document.querySelector('#entry-ref'); const title = document.querySelector('#entry-title'); const amount = document.querySelector('#entry-debit-lines .entry-line-amount'); return ref.maxLength === 5 && ref.pattern === '[0-9]{5}' && title.required && amount.step === '1' && amount.min === '1'; })()`), 'New entries require a title, five-digit reference, and whole-peso amount steps');
     writeFileSync(join(artifacts, 'journal-form.png'), Buffer.from((await call('Page.captureScreenshot')).data, 'base64'));
     await call('Emulation.setDeviceMetricsOverride', { width: 390, height: 700, deviceScaleFactor: 1, mobile: false });
     assert.ok(await evaluate(`(() => { const box = document.querySelector('#post-modal').getBoundingClientRect(); return box.left >= 0 && box.right <= innerWidth && box.top >= 0 && box.bottom <= innerHeight; })()`), 'Journal form fits the mobile viewport');
@@ -236,7 +236,7 @@ try {
     await evaluate(`document.querySelector('#post-modal .js-close-modal').click()`);
     await pause(50);
     assert.equal(await evaluate(`document.activeElement.id`), 'new-entry-button', 'Closing the form returns focus to Post Entry');
-    await evaluate(`document.querySelector('#new-entry-button').click(); document.querySelector('#entry-date').value='2026-10-15'; document.querySelector('#entry-ref').value='${testJournalRef}'; document.querySelector('#entry-title').value='UI smoke title'; document.querySelector('#entry-debit-lines .entry-line-account').value='101'; document.querySelector('#entry-debit-lines .entry-line-amount').value='100'; document.querySelector('[data-add-line="Debit"]').click(); document.querySelectorAll('#entry-debit-lines .entry-line-account')[1].value='503'; document.querySelectorAll('#entry-debit-lines .entry-line-amount')[1].value='25'; document.querySelector('#entry-credit-lines .entry-line-account').value='201'; document.querySelector('#entry-credit-lines .entry-line-amount').value='125'; document.querySelector('#entry-form').requestSubmit()`);
+    await evaluate(`document.querySelector('#new-entry-button').click(); document.querySelector('#entry-date').value='2026-10-15'; document.querySelector('#entry-ref').value='${testJournalRef}'; document.querySelector('#entry-title').value='UI smoke title'; document.querySelector('#entry-debit-lines .entry-line-account').value='101'; document.querySelector('#entry-debit-lines .entry-line-amount').value='100'; document.querySelector('[data-add-line="Debit"]').click(); document.querySelectorAll('#entry-debit-lines .entry-line-account')[1].value='503'; document.querySelectorAll('#entry-debit-lines .entry-line-amount')[1].value='25'; document.querySelector('#entry-credit-lines .entry-line-account').value='201'; document.querySelector('#entry-credit-lines .entry-line-amount').value='125'; document.querySelector('#entry-explanation').value='UI smoke journal entry'; document.querySelector('#entry-form').requestSubmit()`);
     let testJournalId;
     for (let i = 0; i < 50; i++) {
         testJournalId = await evaluate(`(async () => (await import('./js/state.js')).journalEntries.find(entry => entry.ref === '${testJournalRef}')?.id)()`);
@@ -246,8 +246,6 @@ try {
     assert.ok(testJournalId, 'Post Entry saves the journal entry');
     assert.equal(await evaluate(`(async () => (await import('./js/state.js')).journalEntries.find(entry => entry.id === ${testJournalId})?.lines.length)()`), 3, 'Compound entry saves all posting lines');
     assert.equal(await evaluate(`(async () => (await import('./js/state.js')).journalEntries.find(entry => entry.id === ${testJournalId})?.title)()`), 'UI smoke title', 'Journal title is saved');
-    assert.equal(await evaluate(`(async () => (await import('./js/state.js')).journalEntries.find(entry => entry.id === ${testJournalId})?.explanation)()`), 'To record UI smoke title', 'Journal explanation adds To record');
-    assert.ok(await evaluate(`Array.from(document.querySelectorAll('#ledger-accounts-container .ledger-table tbody tr')).some(row => row.cells[1]?.textContent === 'UI smoke title')`), 'Ledger shows the plain particulars');
     const testJournalNumber = await evaluate(`(async () => (await import('./js/state.js')).journalEntries.find(entry => entry.id === ${testJournalId})?.journalNumber)()`);
     assert.ok(Number.isInteger(testJournalNumber) && testJournalNumber > 0, 'Journal gets a display number');
     assert.ok(await evaluate(`document.querySelector('#ledger-accounts-container').textContent.includes('J${testJournalNumber}')`), 'Ledger P.R. names the source journal');
@@ -256,12 +254,12 @@ try {
     await evaluate(`document.querySelector('[data-entry-action="edit"][data-id="${testJournalId}"]').click()`);
     assert.equal(await evaluate(`document.querySelector('#post-modal-title').textContent`), 'Edit journal entry');
     assert.equal(await evaluate(`document.querySelector('#entry-ref').value`), testJournalRef);
-    await evaluate(`document.querySelector('#entry-debit-lines .entry-line-amount').value='200'; document.querySelector('#entry-credit-lines .entry-line-amount').value='225'; document.querySelector('#entry-title').value='Updated UI smoke title'; document.querySelector('#entry-form').requestSubmit()`);
+    await evaluate(`document.querySelector('#entry-debit-lines .entry-line-amount').value='200'; document.querySelector('#entry-credit-lines .entry-line-amount').value='225'; document.querySelector('#entry-title').value='Updated UI smoke title'; document.querySelector('#entry-explanation').value='Updated UI smoke journal entry'; document.querySelector('#entry-form').requestSubmit()`);
     for (let i = 0; i < 50; i++) {
         if (await evaluate(`(async () => (await import('./js/state.js')).journalEntries.find(entry => entry.id === ${testJournalId})?.debitAmount === 225)()`)) break;
         await pause(100);
     }
-    assert.ok(await evaluate(`(async () => (await import('./js/state.js')).journalEntries.find(entry => entry.id === ${testJournalId})?.explanation === 'To record Updated UI smoke title')()`), 'Edit updates the journal entry');
+    assert.ok(await evaluate(`(async () => (await import('./js/state.js')).journalEntries.find(entry => entry.id === ${testJournalId})?.explanation === 'Updated UI smoke journal entry')()`), 'Edit updates the journal entry');
     assert.ok(await evaluate(`(async () => (await import('./js/state.js')).journalEntries.find(entry => entry.id === ${testJournalId})?.title === 'Updated UI smoke title')()`), 'Edit updates the journal title');
     await evaluate(`document.querySelector('[data-entry-action="delete"][data-id="${testJournalId}"]').click()`);
     assert.ok(await evaluate(`document.querySelector('#action-confirm-dialog')?.open`), 'Delete opens a confirmation dialog');

@@ -4,7 +4,7 @@ import { escapeHTML } from '../utils.js';
 import { confirmAction } from '../confirmAction.js';
 
 const labels = { ingredient: 'Ingredient', journal: 'Journal entry' };
-const statuses = { ingredient: 'Deleted', journal: 'Deleted' };
+const statuses = { ingredient: 'Deleted', journal: 'Voided' };
 let records = [];
 
 export async function mount(parent) {
@@ -37,7 +37,7 @@ function render() {
         <td>${statuses[record.type]}</td>
         <td>${escapeHTML(record.changedAt || '—')}</td>
         <td><div class="recovery-row-actions"><button type="button" class="recovery-restore" data-type="${record.type}" data-id="${record.id}" aria-label="Restore ${escapeHTML(record.name)}">Restore</button><button type="button" class="recovery-delete" data-type="${record.type}" data-id="${record.id}" aria-label="Permanently delete ${escapeHTML(record.name)}">Permanently delete</button></div></td>
-    </tr>`).join('') : `<tr><td colspan="5" class="recovery-empty">${records.length ? 'No records match these filters.' : 'No deleted records.'}</td></tr>`;
+    </tr>`).join('') : `<tr><td colspan="5" class="recovery-empty">${records.length ? 'No records match these filters.' : 'No deleted or voided records.'}</td></tr>`;
 }
 
 export async function refresh() {

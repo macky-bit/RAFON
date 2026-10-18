@@ -39,7 +39,7 @@ export function switchTab(tabId) {
         ledger: ['Accounting records', 'Individual T-Account record of secondary entries.'],
         profile: ['Team account', 'Your identity and access details for this workspace.'],
         settings: ['Account preferences', 'Review the information and sign-in methods associated with your account.'],
-        recovery: ['Recover records', 'Restore deleted ingredients and journal entries.'],
+        recovery: ['Recover records', 'Restore deleted ingredients and voided journal entries.'],
         'audit-trail': ['Activity log', 'A timestamped history of changes to restaurant and accounting records.']
     };
     const [eyebrow, subtitle] = headerCopy[tabId] || [

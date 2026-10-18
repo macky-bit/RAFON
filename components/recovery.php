@@ -9,7 +9,7 @@ requireAuthenticatedUser();
 <section id="recovery-view" class="hidden recovery-view">
     <div class="recovery-card">
         <div class="recovery-heading">
-            <div><h2>Recoverable records</h2><p>Restore deleted records, or permanently delete them.</p></div>
+            <div><h2>Recoverable records</h2><p>Restore deleted and voided records, or permanently delete them.</p></div>
             <div class="recovery-heading-actions"><a href="api/recovery.php?action=download" id="recovery-download" class="recovery-refresh" download><i class="fa-solid fa-download" aria-hidden="true"></i> Download backup</a><button type="button" id="recovery-refresh" class="recovery-refresh"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Refresh</button></div>
         </div>
         <div class="recovery-filters" aria-label="Recovery filters">

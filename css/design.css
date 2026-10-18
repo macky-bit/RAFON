@@ -3244,8 +3244,9 @@ header,
 	border-right: 0 !important;
 }
 
-#journal-view .journal-table td.journal-title-indent { padding-left: 2.5rem; }
-.journal-explanation { color: #655d51; font-style: italic; font-weight: 400; margin-top: 0.25rem; overflow-wrap: anywhere; }
+.journal-date-details { border-top: 1px solid var(--line); color: #655d51; margin-top: 0.55rem; overflow-wrap: anywhere; padding-top: 0.55rem; }
+.journal-date-details strong, .journal-date-details span { display: block; }
+.journal-date-details span { font-style: italic; font-weight: 400; margin-top: 0.3rem; }
 .journal-table td.journal-date-cell, .journal-table td.journal-row-actions-cell { border-bottom: 2px solid #c8b99f !important; }
 .journal-table tbody tr.journal-entry-end td { border-bottom: 2px solid #c8b99f !important; }
 
@@ -4941,12 +4942,10 @@ header,
 
 .ledger-sheet { background: #fff; break-inside: avoid; }
 .ledger-sheet-scroll { overflow-x: auto; }
-.ledger-table { border-collapse: collapse; color: #262626; font-size: 0.8rem; min-width: 720px; table-layout: fixed; width: 100%; }
+.ledger-table { border-collapse: collapse; color: #262626; font-size: 0.8rem; min-width: 720px; width: 100%; }
 .ledger-table caption { caption-side: top; text-align: left; }
 .ledger-table caption span { display: block; font-size: 0.76rem; font-style: italic; padding-bottom: 0.5rem; }
 .ledger-table th, .ledger-table td { border: 1px solid #444; padding: 0.5rem 0.65rem; }
-.ledger-date { display: inline-flex; white-space: nowrap; }
-.ledger-date-month { flex: 0 0 3.5em; }
 .ledger-table thead tr:last-child th { background: #f8f8f8; font-weight: 700; text-align: left; }
 .ledger-table thead tr:last-child th:nth-child(n+4) { text-align: right; }
 .ledger-table .ledger-account-heading th { background: #fff; font-size: 1.1rem; text-align: center; text-transform: uppercase; }
@@ -4956,7 +4955,7 @@ header,
 .ledger-table .ledger-balance span { color: #555; font-size: 0.7rem; }
 .ledger-table tfoot th { text-align: right; }
 .ledger-table .ledger-empty { color: var(--muted); text-align: center; }
-.ledger-table .ledger-actions-heading, .ledger-table .ledger-actions-cell { text-align: center !important; }
+.ledger-table .ledger-actions-heading, .ledger-table .ledger-actions-cell { text-align: center !important; width: 64px; }
 .ledger-delete-button { align-items: center; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--tomato); display: inline-flex; height: 32px; justify-content: center; width: 32px; }
 .ledger-delete-button:hover, .ledger-delete-button:focus-visible { background: #ffe3e5; }
 .ledger-delete-button:disabled { cursor: wait; opacity: 0.5; }

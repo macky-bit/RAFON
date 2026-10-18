@@ -4,8 +4,6 @@ import { deleteEntry, journalEntries } from '../state.js';
 import { entryLines, escapeHTML, journalNumberForDate, populateYearFilter, splitAmount } from '../utils.js';
 import { confirmAction } from '../confirmAction.js';
 
-const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 export async function mount(parent) {
     parent.insertAdjacentHTML('beforeend', await loadTemplate('journal'));
 }
@@ -57,7 +55,7 @@ export function render() {
     const visibleEntries = journalEntries.filter(entry => (selectedYear === 'ALL' || entry.date.startsWith(`${selectedYear}-`)) && (!query || [
         `J${journalNumberForDate(entry.date)}`, entry.title, entry.ref, entry.date, entry.explanation,
         ...entryLines(entry).flatMap(line => [line.accountTitle, line.accountCode])
-    ].some(value => String(value ?? '').toLowerCase().includes(query)))).sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id);
+    ].some(value => String(value ?? '').toLowerCase().includes(query))));
     const byYear = new Map();
     visibleEntries.forEach(entry => {
         const year = entry.date.slice(0, 4);
@@ -66,53 +64,34 @@ export function render() {
     });
     container.innerHTML = [...byYear].map(([year, entries]) => {
         const rows = [];
-        let previousDate = null;
-        let previousMonth = null;
         entries.forEach(entry => {
-        const month = entry.date.slice(0, 7);
-        const monthLabel = month !== previousMonth ? monthNames[Number(entry.date.slice(5, 7)) - 1] || '' : '';
-        const day = Number(entry.date.slice(8, 10));
-        const dateContent = entry.date === previousDate ? '' : `<span class="ledger-date" aria-label="${escapeHTML(entry.date)}"><span class="ledger-date-month" aria-hidden="true">${monthLabel}</span><span aria-hidden="true">${day || escapeHTML(entry.date)}</span></span>`;
-        previousDate = entry.date;
-        previousMonth = month;
         const lines = entryLines(entry);
-        const hasNote = Boolean(entry.explanation);
-        const span = lines.length + (hasNote ? 1 : 0);   // extra row for the explanation
         lines.forEach((line, index) => {
             const amount = splitAmount(line.amount);
             const debit = line.type === 'Debit';
-            const isLast = index === lines.length - 1;
-            const indent = !debit || isLast;   // credits and the last line are indented
-            const rowClass = `hover:bg-slate-50 transition-colors${index === 0 ? ' journal-entry-start' : ''}${index === lines.length - 1 && !hasNote ? ' journal-entry-end' : ''}`;
-            rows.push(`<tr class="${rowClass}">${index === 0 ? `<td class="journal-date-cell border border-slate-300 py-2 px-3 text-center text-xs font-medium text-slate-600 align-top" rowspan="${span}">
-                    ${dateContent}
+            const rowClass = `hover:bg-slate-50 transition-colors${index === 0 ? ' journal-entry-start' : ''}${index === lines.length - 1 ? ' journal-entry-end' : ''}`;
+            rows.push(`<tr class="${rowClass}">${index === 0 ? `<td class="journal-date-cell border border-slate-300 py-2 px-3 text-center text-xs font-medium text-slate-600 align-top" rowspan="${lines.length}">
+                    <span>${escapeHTML(entry.date)}</span>
+                    <div class="journal-date-details"><strong>J${journalNumberForDate(entry.date)} · ${escapeHTML(entry.title || entry.explanation)}</strong><span>(${escapeHTML(entry.explanation)})</span></div>
                 </td>` : ''}
-                <td class="border border-slate-300 py-2 px-4 ${debit ? 'text-slate-900 font-semibold' : 'text-slate-700'}${indent ? ' journal-title-indent' : ''} align-top">${escapeHTML(line.accountTitle)}</td>
+                <td class="border border-slate-300 py-2 px-4 ${debit ? 'text-slate-900 font-semibold' : 'pl-10 text-slate-700'} align-top">${escapeHTML(line.accountTitle)}</td>
                 <td class="border border-slate-300 py-2 px-2 text-center text-xs text-slate-500 font-mono align-top">${escapeHTML(line.accountCode)}</td>
                 <td class="border-y border-l border-slate-300 py-2 px-2 text-right mono w-28 align-top">${debit ? amount.pesos : ''}</td>
                 <td class="border-y border-r border-slate-300 py-2 px-1 text-center mono w-8 border-split align-top">${debit ? amount.cents : ''}</td>
                 <td class="border-y border-l border-slate-300 py-2 px-2 text-right mono w-28 align-top">${debit ? '' : amount.pesos}</td>
                 <td class="border-y border-r border-slate-300 py-2 px-1 text-center mono w-8 align-top">${debit ? '' : amount.cents}</td>
-                ${index === 0 ? `<td class="journal-row-actions-cell" rowspan="${span}"><div class="journal-row-actions">
+                ${index === 0 ? `<td class="journal-row-actions-cell" rowspan="${lines.length}"><div class="journal-row-actions">
                     <button type="button" data-entry-action="edit" data-id="${entry.id}" aria-label="Edit journal entry ${escapeHTML(entry.ref)}" title="Edit"><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
                     <button type="button" data-entry-action="delete" data-id="${entry.id}" aria-label="Delete journal entry ${escapeHTML(entry.ref)}" title="Delete"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
                 </div></td>` : ''}</tr>`);
         });
-        if (hasNote) rows.push(`<tr class="hover:bg-slate-50 transition-colors journal-entry-end">
-                <td class="journal-explanation border border-slate-300 py-2 px-4 align-top">(${escapeHTML(/^to record\b/i.test(entry.explanation.trim()) ? entry.explanation.trim() : `To record ${entry.explanation.trim()}`)})</td>
-                <td class="border border-slate-300 py-2 px-2 align-top"></td>
-                <td class="border-y border-l border-slate-300 py-2 px-2 w-28 align-top"></td>
-                <td class="border-y border-r border-slate-300 py-2 px-1 w-8 border-split align-top"></td>
-                <td class="border-y border-l border-slate-300 py-2 px-2 w-28 align-top"></td>
-                <td class="border-y border-r border-slate-300 py-2 px-1 w-8 align-top"></td>
-            </tr>`);
         });
         return `<section class="journal-year-section" aria-label="Journal ${escapeHTML(year)}">
             <h2 class="journal-year-heading">J${journalNumberForDate(`${year}-01-01`)} · ${escapeHTML(year)}</h2>
             <div class="journal-table-wrap"><table class="journal-table">
                 <thead><tr>
                     <th class="border border-slate-300 py-2.5 px-3 w-28 text-center">Date</th>
-                    <th class="border border-slate-300 py-2.5 px-4 text-left">Particulars</th>
+                    <th class="border border-slate-300 py-2.5 px-4 text-left">Account Titles &amp; Explanation</th>
                     <th class="border border-slate-300 py-2.5 px-2 w-16 text-center">P.R.</th>
                     <th class="border border-slate-300 py-2.5 px-0 w-36 text-center" colspan="2">Debit (₱)</th>
                     <th class="border border-slate-300 py-2.5 px-0 w-36 text-center" colspan="2">Credit (₱)</th>

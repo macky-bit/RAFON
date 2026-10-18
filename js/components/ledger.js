@@ -5,11 +5,9 @@ import { entryLines, escapeHTML, journalNumberForDate, populateYearFilter } from
 import { confirmAction } from '../confirmAction.js';
 
 const money = amount => Number(amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const displayDay = date => {
-    const [, month, day] = String(date).split('-');
-    const monthName = monthNames[Number(month) - 1];
-    return monthName && day ? String(Number(day)) : String(date);
+const displayDate = date => {
+    const [year, month, day] = String(date).split('-');
+    return year && month && day ? `${Number(month)}/${Number(day)}/${year}` : String(date);
 };
 
 export async function mount(parent) {
@@ -65,18 +63,11 @@ function postingsFor(account) {
 
 function accountTable(account, postings, year) {
     let balance = 0;
-    let previousMonth = null;
-    let previousDate = null;
     const rows = postings.map(posting => {
         balance += (posting.side === 'debit' ? 1 : -1) * posting.amount;
-        const balanceSide = balance < 0 ? 'Cr' : 'Db';
-        const month = posting.entry.date.slice(0, 7);
-        const monthLabel = month !== previousMonth ? monthNames[Number(posting.entry.date.slice(5, 7)) - 1] || '' : '';
-        const dateCell = posting.entry.date === previousDate ? '<td></td>' : `<td aria-label="${escapeHTML(posting.entry.date)}"><span class="ledger-date"><span class="ledger-date-month" aria-hidden="true">${monthLabel}</span><span aria-hidden="true">${escapeHTML(displayDay(posting.entry.date))}</span></span></td>`;
-        previousMonth = month;
-        previousDate = posting.entry.date;
+        const balanceSide = balance < 0 ? 'Cr' : 'Dr';
         return `<tr>
-            ${dateCell}
+            <td>${escapeHTML(displayDate(posting.entry.date))}</td>
             <td>${escapeHTML(posting.particular)}</td>
             <td class="mono">J${journalNumberForDate(posting.entry.date)}</td>
             <td class="mono amount">${posting.side === 'debit' ? money(posting.amount) : ''}</td>
@@ -85,17 +76,16 @@ function accountTable(account, postings, year) {
             <td class="ledger-actions-cell"><button type="button" class="ledger-delete-button" data-ledger-action="delete" data-id="${posting.entry.id}" aria-label="Delete journal entry ${escapeHTML(posting.entry.ref)} and all its ledger postings" title="Delete journal entry"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button></td>
         </tr>`;
     }).join('');
-    const endingSide = balance === 0 ? '—' : (balance > 0 ? 'Db' : 'Cr');
+    const endingSide = balance === 0 ? '—' : (balance > 0 ? 'Dr' : 'Cr');
     return `<article class="ledger-sheet">
         <div class="ledger-sheet-scroll"><table class="ledger-table">
             <caption><span>J${journalNumberForDate(`${year}-01-01`)} · ${year} · Amounts in Philippine Pesos</span></caption>
-            <colgroup><col style="width:12%"><col style="width:32%"><col style="width:7%"><col style="width:13%"><col style="width:13%"><col style="width:15%"><col style="width:8%"></colgroup>
             <thead>
                 <tr class="ledger-account-heading"><th colspan="6">${escapeHTML(account.title)}</th><th>No. ${escapeHTML(account.code)}</th></tr>
                 <tr><th>Date</th><th>Particulars</th><th>PR</th><th>Debit</th><th>Credit</th><th>Balance</th><th class="ledger-actions-heading">Actions</th></tr>
             </thead>
             <tbody>${rows || '<tr><td colspan="7" class="ledger-empty">No postings for this account.</td></tr>'}</tbody>
-            <tfoot><tr><th colspan="5">Total</th><td class="mono amount ledger-balance">${money(Math.abs(balance))} <span>${endingSide}</span></td><td></td></tr></tfoot>
+            <tfoot><tr><th colspan="5">Ending balance</th><td class="mono amount ledger-balance">${money(Math.abs(balance))} <span>${endingSide}</span></td><td></td></tr></tfoot>
         </table></div>
     </article>`;
 }
